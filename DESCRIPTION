@@ -1,0 +1,10 @@
+Package: latentcov.sbm
+Title: Latent Covariance Between Latent Block in SBM
+Version: 0.0.0.9000
+Authors@R: 
+    person("Louis", "Lacoste", , "louis.lacoste@inrae.fr", role = c("aut", "cre"))
+Description: This package implements a latent covariance structure between the latent blocks of the Stochastic Block Model to relax the hypothesis of independance between the blocks.
+License: MIT License
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.0
