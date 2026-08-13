@@ -1,0 +1,35 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# latentcov.sbm
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![Codecov test coverage](https://codecov.io/gh/Polarolouis/latentcov.sbm/graph/badge.svg)](https://app.codecov.io/gh/Polarolouis/latentcov.sbm)
+[![R-CMD-check](https://github.com/Polarolouis/latentcov.sbm/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Polarolouis/latentcov.sbm/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
+latentcov.sbm stands for Latent Covariance Between Latent Block in SBM.
+
+This package implements a latent covariance structure between the latent blocks of the Stochastic Block Model to relax the hypothesis of independance between the blocks.
+
+## Installation
+
+You can install the development version of latentcov.sbm from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("Polarolouis/latentcov.sbm")
+```
