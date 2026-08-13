@@ -19,7 +19,7 @@ alpha_recovery_plots <- function(draws, true_alpha, find_permutation = find_perm
         ggplot2::aes(xintercept = true, colour = "true", ),
         linetype = "dashed"
       ) + ggplot2::labs(colour = "Parameter type") +
-      ggplot2::ggtitle(paste0("Chain N°", chain_idx))
+      ggplot2::ggtitle(paste0("Chain #", chain_idx))
   }) |> patchwork::wrap_plots(nrow = posterior::nchains(draws)) + patchwork::plot_annotation(subtitle = "alpha histograms")
 }
 
@@ -50,7 +50,7 @@ rho_recovery_plots <- function(draws, true_alpha, true_rho, true_W_ind, find_per
         ),
         linetype = "dashed"
       ) + ggplot2::labs(colour = "Parameter type") +
-      ggplot2::ggtitle(paste0("Chain N°", chain_idx))
+      ggplot2::ggtitle(paste0("Chain #", chain_idx))
   }) |> patchwork::wrap_plots(nrow = posterior::nchains(draws)) + patchwork::plot_annotation(subtitle = "rho histograms")
 }
 
@@ -81,7 +81,7 @@ pi_recovery_plots <- function(draws, true_alpha, true_Z_ind, find_permutation = 
         ),
         linetype = "dashed"
       ) + ggplot2::labs(colour = "Parameter type") +
-      ggplot2::ggtitle(paste0("Chain N°", chain_idx))
+      ggplot2::ggtitle(paste0("Chain #", chain_idx))
   }) |> patchwork::wrap_plots(nrow = posterior::nchains(draws)) + patchwork::plot_annotation(subtitle = "pi histograms")
 }
 
@@ -121,7 +121,7 @@ mean_pi_recovery_plots <- function(draws, true_alpha, true_Z_ind, find_permutati
         ),
         linetype = "dashed"
       ) + ggplot2::labs(colour = "Parameter type") +
-      ggplot2::ggtitle(paste0("Chain N°", chain_idx))
+      ggplot2::ggtitle(paste0("Chain #", chain_idx))
   }) |> patchwork::wrap_plots(nrow = posterior::nchains(draws)) + patchwork::plot_annotation(subtitle = "mean pi histograms")
 }
 
@@ -152,6 +152,6 @@ P_recovery_plots <- function(draws, true_alpha, find_permutation = find_permutat
         ),
         linetype = "dashed"
       ) + labs(colour = "Parameter type") +
-      ggtitle(paste0("Chain N°", chain_idx))
+      ggtitle(paste0("Chain #", chain_idx))
   }) |> patchwork::wrap_plots(nrow = nchains)
 }
