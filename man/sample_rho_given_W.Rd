@@ -6,6 +6,9 @@
 \usage{
 sample_rho_given_W(gammas_post)
 }
+\arguments{
+\item{gammas_post}{a vector of size R containing the Dirichlet parameter from which to sample}
+}
 \description{
 A function to sample from the posterior distribution \eqn{\rho\mid W} which is a Dirichlet of posterior parameters
 }

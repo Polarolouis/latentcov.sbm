@@ -54,9 +54,24 @@ per row for \code{P}.}
 \code{alpha_0}, \code{beta_0},
 \code{gammas_0}, \code{a0}, \code{b0}.}
 
+\item{rho}{a double indicating the variance of the gaussian proposal distribution.}
+
 \item{sigma2_fixed}{Logical; if \code{TRUE}, keeps
 \code{sigma2 = 1}, otherwise samples
 \code{sigma2} from its inverse-gamma full conditional.}
+
+\item{known_alpha}{NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix}
+
+\item{known_P}{NULL (default) or a matrix (\eqn{n_1\times K-1}) indicating the known latent correlated position used to compute probabilities of blocks}
+
+\item{known_W}{NULL (default) or a matrix (\eqn{n_2\times R})
+indicating the known columns block memberships}
+
+\item{known_Z}{NULL (default) or a matrix (\eqn{n_1\times K})
+indicating the known columns block memberships}
+
+\item{P_sampler}{a function indicating the sampler to use for the P
+variable. Default to sample_P_metropolis_trick}
 
 \item{minibatch}{Logical; if \code{TRUE} the update order
 for P will change on each Gibbs iteration}

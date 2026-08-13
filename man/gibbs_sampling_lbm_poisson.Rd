@@ -43,6 +43,20 @@ matrix (\code{ncol(Y)} x \code{R}).}
 \code{alpha_0}, \code{beta_0},
 \code{gammas_0}, \code{a0}, \code{b0}.}
 
+\item{rho}{a double indicating the variance of the gaussian proposal distribution.}
+
+\item{known_alpha}{NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix}
+
+\item{known_W}{NULL (default) or a matrix (\eqn{n_2\times R})
+indicating the known columns block memberships}
+
+\item{known_Z}{NULL (default) or a matrix (\eqn{n_1\times K})
+indicating the known columns block memberships}
+
+\item{known_pi}{NULL (default) or a vector (\eqn{K})
+indicating the known row block proportions
+indicating the known columns block memberships}
+
 \item{tol}{Numeric; a small number indicating the
 tolerance at which one wants to clamp the values,
 i.e., if \code{value<tol} it gets set to tol and if
@@ -55,6 +69,12 @@ will print a message each 10 iterations}
 \item{prefix}{Optional character string; a prefix to
 append before logs. Will not print anything if
 \code{verbose=FALSE}. Defaults to '' (empty string)}
+
+\item{force_order}{a boolean indicating if the order the groups
+\eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the decreasing
+marginals order(pi\%\emph{\%alpha,decreasing=TRUE) and
+order(alpha \%}\% rho,decreasing=TRUE) to
+alleviate label-switching}
 }
 \value{
 A list with sampled trajectories:

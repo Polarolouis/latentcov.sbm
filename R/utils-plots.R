@@ -141,17 +141,17 @@ P_recovery_plots <- function(draws, true_alpha, find_permutation = find_permutat
 
   lapply(seq_len(dim(draws)[2]), function(chain_idx) {
     chain_draws <- draws[, chain_idx, ]
-    p <- mcmc_hist(chain_draws, pars = true_rho_df$Parameter)
+    p <- bayesplot::mcmc_hist(chain_draws, pars = true_rho_df$Parameter)
 
     p +
-      geom_vline(
+      ggplot2::geom_vline(
         data = true_rho_df,
-        aes(
+        ggplot2::aes(
           xintercept = true,
           colour = Type
         ),
         linetype = "dashed"
-      ) + labs(colour = "Parameter type") +
-      ggtitle(paste0("Chain #", chain_idx))
+      ) + ggplot2::labs(colour = "Parameter type") +
+      ggplot2::ggtitle(paste0("Chain #", chain_idx))
   }) |> patchwork::wrap_plots(nrow = nchains)
 }

@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Louis", "Lacoste", , "louis.lacoste@inrae.fr", role = c("aut", "cre"))
 Description: This package implements a latent covariance structure between the latent blocks of the Stochastic Block Model to relax the hypothesis of independance between the blocks.
-License: MIT License
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.0
@@ -18,4 +18,18 @@ LinkingTo:
     Rcpp,
     RcppArmadillo
 Imports: 
-    Rcpp
+    bayesplot,
+    cli,
+    clue,
+    dplyr,
+    futurize,
+    ggplot2,
+    gtools,
+    MASS,
+    MCMCpack,
+    mvtnorm,
+    patchwork,
+    posterior,
+    progressr,
+    Rcpp,
+    reshape2
