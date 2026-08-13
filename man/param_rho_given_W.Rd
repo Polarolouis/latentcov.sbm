@@ -10,8 +10,8 @@ param_rho_given_W(gammas, W)
 \item{gammas}{a vector of size R (the number of column groups),
 the prior of the Dirichlet}
 
-\item{W}{a matrix of size $n_2 \times R$ with a single 1 per line
-indicating the membership of column node $j$}
+\item{W}{a matrix of size \eqn{n_2 \times R} with a single 1 per line
+indicating the membership of column node \eqn{j}, \eqn{W_{j,r} = 1} if \eqn{j} is in group \eqn{r} 0 else}
 }
 \value{
 a vector of size R with the updated Dirichlet parameters

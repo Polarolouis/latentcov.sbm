@@ -130,8 +130,8 @@ sample_Z_given_alpha_pi_Y_W <- function(probs) {
 #'
 #' @param gammas a vector of size R (the number of column groups),
 #' the prior of the Dirichlet
-#' @param W a matrix of size $n_2 \times R$ with a single 1 per line
-#' indicating the membership of column node $j$
+#' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
+#' indicating the membership of column node \eqn{j}, \eqn{W_{j,r} = 1} if \eqn{j} is in group \eqn{r} 0 else
 #'
 #' @return a vector of size R with the updated Dirichlet parameters
 param_rho_given_W <- function(gammas, W) {
