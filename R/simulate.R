@@ -138,6 +138,11 @@ param_rho_given_W <- function(gammas, W) {
   gammas + colSums(W)
 }
 
+#' Sample from the posterior \eqn{\rho\mid W}
+#'
+#' A function to sample from the posterior distribution \eqn{\rho\mid W} which is a Dirichlet of posterior parameters
+#'
+#' @seealso [param_rho_given_W()] for the computations of the posterior parameters
 sample_rho_given_W <- function(gammas_post) {
   as.vector(MCMCpack::rdirichlet(n = 1, alpha = gammas_post))
 }
