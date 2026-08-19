@@ -40,10 +40,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mean_of_Pi_given_P_min_i_sigma
+arma::rowvec mean_of_Pi_given_P_min_i_sigma(arma::mat& P, arma::mat& Sigma, double sigma2, int i);
+RcppExport SEXP _latentcov_sbm_mean_of_Pi_given_P_min_i_sigma(SEXP PSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP iSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Sigma(SigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< int >::type i(iSEXP);
+    rcpp_result_gen = Rcpp::wrap(mean_of_Pi_given_P_min_i_sigma(P, Sigma, sigma2, i));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cov_of_Pi_given_P_min_i_sigma
+arma::mat cov_of_Pi_given_P_min_i_sigma(arma::mat& P, arma::mat& Sigma, double sigma2, int i);
+RcppExport SEXP _latentcov_sbm_cov_of_Pi_given_P_min_i_sigma(SEXP PSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP iSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Sigma(SigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< int >::type i(iSEXP);
+    rcpp_result_gen = Rcpp::wrap(cov_of_Pi_given_P_min_i_sigma(P, Sigma, sigma2, i));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_latentcov_sbm_pivot_coord_inv", (DL_FUNC) &_latentcov_sbm_pivot_coord_inv, 2},
     {"_latentcov_sbm_sample_P_classical", (DL_FUNC) &_latentcov_sbm_sample_P_classical, 7},
+    {"_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma, 4},
+    {"_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma, 4},
     {NULL, NULL, 0}
 };
 

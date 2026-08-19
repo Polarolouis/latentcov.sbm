@@ -9,3 +9,11 @@ sample_P_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metr
     .Call(`_latentcov_sbm_sample_P_classical`, P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho)
 }
 
+mean_of_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, i) {
+    .Call(`_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma`, P, Sigma, sigma2, i)
+}
+
+cov_of_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, i) {
+    .Call(`_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma`, P, Sigma, sigma2, i)
+}
+

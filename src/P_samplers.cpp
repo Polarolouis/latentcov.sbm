@@ -23,10 +23,8 @@ arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal") {
     first_fill = 1.0;
   }
 
-  // first column (R uses 1-based indexing and x was negated)
   y.col(0) = first_fill * xneg.col(0);
 
-  // Build upper terms: translate R loops (i in 2:ncol(y), j in 1:(i-1))
   for (int i = 1; i < (int)y.n_cols; ++i) {
     for (int j = 0; j < i; ++j) {
       unsigned int ull_i = static_cast<unsigned int>(i);
@@ -36,7 +34,6 @@ arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal") {
     }
   }
 
-  // Adjustment loop: R does for(i in 2:(ncol(y)-1)) ...
   for (int i = 1; i < (int)y.n_cols - 1; ++i) {
     unsigned int ull_i = static_cast<unsigned int>(i);
     double multip = 1.0;
@@ -93,3 +90,55 @@ arma::mat sample_P_classical(arma::mat &P, arma::mat &Z, arma::mat &Sigma,
 
   return running_P;
 };
+
+// [[Rcpp::export]]
+arma::rowvec mean_of_Pi_given_P_min_i_sigma(arma::mat &P, arma::mat &Sigma,
+                                            double sigma2, int i) {
+  int n = P.n_rows;
+
+  // Indices minus_i = setdiff(1:n, i)  (0-based: tous sauf i)
+  arma::uvec minus_i = arma::regspace<arma::uvec>(0, n - 1);
+  minus_i.shed_row(i);
+
+  // Si = Sigma[i, minus_i] %*% solve(Sigma[minus_i, minus_i])
+  arma::rowvec Sigma_i_minus = Sigma.row(i);
+  Sigma_i_minus.shed_col(i); // Sigma[i, minus_i]
+  arma::mat Sigma_minus_minus = Sigma.submat(minus_i, minus_i);
+  // Resolve the linear system directly instead of computing the explicit
+  // inverse: more stable numerically and closer to R's solve().
+  arma::vec Si_t = arma::solve(Sigma_minus_minus, Sigma_i_minus.t());
+  arma::rowvec Si = Si_t.t();
+
+  // mean_i = Si %*% P[minus_i, ]
+  arma::rowvec mean_i = Si * P.rows(minus_i);
+  return mean_i;
+}
+
+// [[Rcpp::export]]
+arma::mat cov_of_Pi_given_P_min_i_sigma(arma::mat &P, arma::mat &Sigma,
+                                        double sigma2, int i) {
+  int n = P.n_rows;
+  int K_minus_1 = P.n_cols;
+
+  // Indices minus_i = setdiff(1:n, i)  (0-based: tous sauf i)
+  arma::uvec minus_i = arma::regspace<arma::uvec>(0, n - 1);
+  minus_i.shed_row(i);
+
+  // Si = Sigma[i, minus_i] %*% solve(Sigma[minus_i, minus_i])
+  arma::rowvec Sigma_i_minus = Sigma.row(i);
+  Sigma_i_minus.shed_col(i); // Sigma[i, minus_i]
+  arma::mat Sigma_minus_minus = Sigma.submat(minus_i, minus_i);
+  // Resolve the linear system directly instead of computing the explicit
+  // inverse: more stable numerically and closer to R's solve().
+  arma::vec Si_t = arma::solve(Sigma_minus_minus, Sigma_i_minus.t());
+  arma::rowvec Si = Si_t.t();
+
+  // cov_i = sigma2 * (Sigma[i,i] - Si %*% Sigma[-i, i]) * I
+  arma::vec Sigma_minus_i = Sigma.col(i);
+  Sigma_minus_i.shed_row(i); // Sigma[-i, i]
+  double scalar = Sigma(i, i) - arma::as_scalar(Si * Sigma_minus_i);
+  arma::mat cov_i =
+      (sigma2 * scalar) * arma::eye<arma::mat>(K_minus_1, K_minus_1);
+
+  return cov_i;
+}
