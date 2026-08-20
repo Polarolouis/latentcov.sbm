@@ -25,8 +25,6 @@ diag(Sigma) <- 1
 Pnonindep <- simulate_P_and_Z(K = K, Sigma, sigma2star, 1)[["P"]]
 
 
-
-
 test_that("pivot_coord_inv behave the same in C++ and R", {
   expect_equal(object = pivot_coord_inv(x = Pindep), expected = pivotCoordInv(Pindep), tolerance = 1e-6)
   expect_equal(object = pivot_coord_inv(x = Pnonindep), expected = pivotCoordInv(Pnonindep), tolerance = 1e-6)
