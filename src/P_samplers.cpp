@@ -28,7 +28,10 @@ arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal",
     for (int j = 0; j < i; ++j) {
       unsigned int ull_i = static_cast<unsigned int>(i);
       unsigned int ull_j = static_cast<unsigned int>(j);
-      double denom = std::sqrt((double)(D - ull_j) * (double)(D - ull_j - 1.0));
+      double denom = 1.0;
+      if (norm == "orthonormal") {
+        denom = std::sqrt((double)(D - ull_j) * (double)(D - ull_j - 1.0));
+      }
       y.col(ull_i) += xneg.col(ull_j) / denom;
     }
   }

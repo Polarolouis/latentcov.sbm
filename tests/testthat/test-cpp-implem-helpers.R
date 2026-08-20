@@ -1,10 +1,33 @@
-test_that("pivot_coord_inv behave the same in C++ and R", {
+test_that("pivot_coord_inv behave the same in C++ and R for orthonormal", {
   expect_equal(object = pivot_coord_inv(x = Pindep), expected = pivotCoordInv(Pindep), tolerance = 1e-6)
   expect_equal(object = pivot_coord_inv(x = Pnonindep), expected = pivotCoordInv(Pnonindep), tolerance = 1e-6)
 
   expect_equal(object = pivot_coord_inv(x = Pindep, log = TRUE), expected = log(pivotCoordInv(Pindep)), tolerance = 1e-6)
   expect_equal(object = pivot_coord_inv(x = Pnonindep, log = TRUE), expected = log(pivotCoordInv(Pnonindep)), tolerance = 1e-6)
 })
+
+test_that("pivot_coord_inv behave the same in C++ and R for orthogonal", {
+  expect_equal(object = pivot_coord_inv(x = Pindep, norm = "orthogonal"), expected = pivotCoordInv(Pindep, norm = "orthogonal"), tolerance = 1e-6)
+  expect_equal(object = pivot_coord_inv(x = Pnonindep, norm = "orthogonal"), expected = pivotCoordInv(Pnonindep, norm = "orthogonal"), tolerance = 1e-6)
+
+  expect_equal(object = pivot_coord_inv(x = Pindep, norm = "orthogonal", log = TRUE), expected = log(pivotCoordInv(Pindep, norm = "orthogonal")), tolerance = 1e-6)
+  expect_equal(object = pivot_coord_inv(x = Pnonindep, norm = "orthogonal", log = TRUE), expected = log(pivotCoordInv(Pnonindep, norm = "orthogonal")), tolerance = 1e-6)
+})
+
+test_that("pivot_coord_inv behave the same in C++ and R for undefined norms", {
+  expect_error(pivotCoordInv(Pindep, norm = "aquarelle"))
+  expect_error(pivot_coord_inv(x = Pindep, norm = "aquarelle"))
+
+  expect_error(pivotCoordInv(Pnonindep, norm = "aquarelle"))
+  expect_error(pivot_coord_inv(x = Pnonindep, norm = "aquarelle"))
+
+  expect_error(pivotCoordInv(Pindep, norm = "aquarelle", log = TRUE))
+  expect_error(pivot_coord_inv(x = Pindep, norm = "aquarelle", log = TRUE))
+
+  expect_error(pivotCoordInv(Pnonindep, norm = "aquarelle", log = TRUE))
+  expect_error(pivot_coord_inv(x = Pnonindep, norm = "aquarelle", log = TRUE))
+})
+
 
 test_that("conditional Pi_given_PminI_sigma2 behave the same in C++ and R", {
   res_list <- lapply(seq(n1), function(i) {
