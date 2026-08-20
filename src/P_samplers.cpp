@@ -1,11 +1,10 @@
-#include "mvnorm.h"
-#include <RcppArmadillo.h>
-#include <RcppArmadilloExtensions/sample.h>
+#include "P_samplers.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
 // [[Rcpp::export]]
-arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal") {
+arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal",
+                          bool log = false) {
   // Mirror precisely the R implementation: x <- -x and then operate on that
   arma::mat xneg = -x;
   arma::mat xback;
@@ -46,6 +45,10 @@ arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal") {
   arma::vec max_rows = arma::max(y, 1);
   arma::mat yexp = arma::exp(y - arma::repmat(max_rows, 1, y.n_cols));
   xback = yexp / arma::repmat(arma::sum(yexp, 1), 1, y.n_cols);
+
+  if (log) {
+    xback = arma::log(xback);
+  }
 
   return xback;
 }

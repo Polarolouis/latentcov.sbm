@@ -12,14 +12,15 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // pivot_coord_inv
-arma::mat pivot_coord_inv(arma::mat& x, std::string norm);
-RcppExport SEXP _latentcov_sbm_pivot_coord_inv(SEXP xSEXP, SEXP normSEXP) {
+arma::mat pivot_coord_inv(arma::mat& x, std::string norm, bool log);
+RcppExport SEXP _latentcov_sbm_pivot_coord_inv(SEXP xSEXP, SEXP normSEXP, SEXP logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat& >::type x(xSEXP);
     Rcpp::traits::input_parameter< std::string >::type norm(normSEXP);
-    rcpp_result_gen = Rcpp::wrap(pivot_coord_inv(x, norm));
+    Rcpp::traits::input_parameter< bool >::type log(logSEXP);
+    rcpp_result_gen = Rcpp::wrap(pivot_coord_inv(x, norm, log));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -70,7 +71,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_latentcov_sbm_pivot_coord_inv", (DL_FUNC) &_latentcov_sbm_pivot_coord_inv, 2},
+    {"_latentcov_sbm_pivot_coord_inv", (DL_FUNC) &_latentcov_sbm_pivot_coord_inv, 3},
     {"_latentcov_sbm_sample_P_classical", (DL_FUNC) &_latentcov_sbm_sample_P_classical, 7},
     {"_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma, 4},
     {"_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma, 4},
