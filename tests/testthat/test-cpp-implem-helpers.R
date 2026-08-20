@@ -1,33 +1,9 @@
-# Common
-seed <- 1234L
-set.seed(seed)
-# Rows
-K <- 3
-sigma2star <- 1
-npc <- 30
-n1 <- npc * K
-phylo_memberships <- rep(seq(K), each = npc)
-rho_within <- 0.9
-rho_between <- -1 / (K * npc - 1)
-
-# indep
-Pindep <- matrix(rnorm(n1 * (K - 1)), nrow = n1)
-
-# non indep
-library(mvtnorm)
-
-Sigma <- matrix(rho_between, nrow = n1, ncol = n1)
-same_cluster <- outer(phylo_memberships, phylo_memberships, `==`)
-Sigma[same_cluster] <- rho_within
-diag(Sigma) <- 1
-
-
-Pnonindep <- simulate_P_and_Z(K = K, Sigma, sigma2star, 1)[["P"]]
-
-
 test_that("pivot_coord_inv behave the same in C++ and R", {
   expect_equal(object = pivot_coord_inv(x = Pindep), expected = pivotCoordInv(Pindep), tolerance = 1e-6)
   expect_equal(object = pivot_coord_inv(x = Pnonindep), expected = pivotCoordInv(Pnonindep), tolerance = 1e-6)
+
+  expect_equal(object = pivot_coord_inv(x = Pindep, log = TRUE), expected = log(pivotCoordInv(Pindep)), tolerance = 1e-6)
+  expect_equal(object = pivot_coord_inv(x = Pnonindep, log = TRUE), expected = log(pivotCoordInv(Pnonindep)), tolerance = 1e-6)
 })
 
 test_that("conditional Pi_given_PminI_sigma2 behave the same in C++ and R", {
