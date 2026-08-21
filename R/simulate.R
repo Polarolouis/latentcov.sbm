@@ -218,7 +218,7 @@ sample_alpha_given_Y_Z_W_poisson <- function(shape, rate) {
 #' @param minibatch a boolean indicating wether to update the rows in the lexical order or to sample at each iteration. Default to TRUE
 #' @param niter_metropolis an integer specifying the number of metropolis iterations to perform. Defaults to 50.
 #' @param rho a double indicating the variance of the gaussian proposal distribution.
-sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1) {
+sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1, verbose = FALSE) {
   n <- nrow(P)
   out_P <- array(P, dim = dim(P), dimnames = list("Individual" = paste0("P", seq_len(nrow(P))), "Coordinates" = seq_len(ncol(P))))
   # Updating P
@@ -230,24 +230,17 @@ sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE,
     i <- row_order[ind_iter]
     for (iter_metro in seq(niter_metropolis)) {
       rho_iter <- rho * sample(c(1, 1 / 10, 10), size = 1)
-
-      Pi_candidate <- P[i, ] + rnorm(n = ncol(P), sd = rho_iter)
-
+      noise <- rnorm(n = ncol(P), sd = sqrt(rho_iter))
+      Pi_candidate <- P[i, ] + noise
       log_u <- log(runif(n = 1))
 
       # Conditional parameters
       P_candidate <- P
       P_candidate[i, ] <- Pi_candidate
 
-      params_candidate <- cond_Pi_given_P_min_i_sigma(P_candidate, Sigma, sigma2, i)
+      params <- cond_Pi_given_P_min_i_sigma(P_candidate, Sigma, sigma2, i)
 
-      params_old <- cond_Pi_given_P_min_i_sigma(P, Sigma, sigma2, i)
-
-
-      log_accept <- log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = Pi_candidate)) - log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = P[i, ])) + mvtnorm::dmvnorm(x = Pi_candidate, mean = params_candidate$mean, sigma = params_candidate$cov, log = TRUE) - mvtnorm::dmvnorm(x = P[i, ], mean = params_old$mean, sigma = params_old$cov, log = TRUE)
-
-
-      # log_accept <- log(cat_dist_ilr_given_Pi(Zi = Z[i], Pi = Pi_candidate)) - log(cat_dist_ilr_given_Pi(Zi = Z[i], Pi = current_P[i, ]))
+      log_accept <- log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = Pi_candidate)) - log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = P[i, ])) + mvtnorm::dmvnorm(x = Pi_candidate, mean = params$mean, sigma = params$cov, log = TRUE) - mvtnorm::dmvnorm(x = P[i, ], mean = params$mean, sigma = params$cov, log = TRUE)
 
       if (log_u < log_accept) {
         accepted_count <- accepted_count + 1
@@ -256,7 +249,9 @@ sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE,
       }
     }
   }
-  message("Mean accepted rate ", accepted_count / (n * niter_metropolis))
+  if (verbose) {
+    message("Mean accepted rate ", accepted_count / (n * niter_metropolis))
+  }
   return(out_P)
 }
 
