@@ -373,3 +373,13 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
 
   cli::cli_alert_success("This configuration is identifiable in the sense of Keribin et al. !")
 }
+
+.one_hot <- function(x, Q) {
+  O <- matrix(0, length(x), Q)
+  O[cbind(seq.int(length(x)), x)] <- 1
+  return(O)
+}
+
+.rev_one_hot <- function(X) {
+  return(as.vector(max.col(X)))
+}
