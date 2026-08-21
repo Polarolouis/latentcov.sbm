@@ -24,9 +24,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// sample_P_classical
-arma::mat sample_P_classical(arma::mat& P, arma::mat& Z, arma::mat& Sigma, double sigma2, bool minibatch, int niter_metropolis, double rho);
-RcppExport SEXP _latentcov_sbm_sample_P_classical(SEXP PSEXP, SEXP ZSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP minibatchSEXP, SEXP niter_metropolisSEXP, SEXP rhoSEXP) {
+// sample_P_metropolis_classical_cpp
+arma::mat sample_P_metropolis_classical_cpp(arma::mat& P, arma::mat& Z, arma::mat& Sigma, double sigma2, bool minibatch, int niter_metropolis, double rho);
+RcppExport SEXP _latentcov_sbm_sample_P_metropolis_classical_cpp(SEXP PSEXP, SEXP ZSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP minibatchSEXP, SEXP niter_metropolisSEXP, SEXP rhoSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -37,7 +37,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type minibatch(minibatchSEXP);
     Rcpp::traits::input_parameter< int >::type niter_metropolis(niter_metropolisSEXP);
     Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
-    rcpp_result_gen = Rcpp::wrap(sample_P_classical(P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho));
+    rcpp_result_gen = Rcpp::wrap(sample_P_metropolis_classical_cpp(P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -72,7 +72,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_latentcov_sbm_pivot_coord_inv", (DL_FUNC) &_latentcov_sbm_pivot_coord_inv, 3},
-    {"_latentcov_sbm_sample_P_classical", (DL_FUNC) &_latentcov_sbm_sample_P_classical, 7},
+    {"_latentcov_sbm_sample_P_metropolis_classical_cpp", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_classical_cpp, 7},
     {"_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma, 4},
     {"_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma, 4},
     {NULL, NULL, 0}

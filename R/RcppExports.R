@@ -5,8 +5,8 @@ pivot_coord_inv <- function(x, norm = "orthonormal", log = FALSE) {
     .Call(`_latentcov_sbm_pivot_coord_inv`, x, norm, log)
 }
 
-sample_P_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1.0) {
-    .Call(`_latentcov_sbm_sample_P_classical`, P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho)
+sample_P_metropolis_classical_cpp <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1.0) {
+    .Call(`_latentcov_sbm_sample_P_metropolis_classical_cpp`, P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho)
 }
 
 mean_of_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, i) {

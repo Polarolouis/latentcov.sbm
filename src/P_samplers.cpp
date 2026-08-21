@@ -1,4 +1,5 @@
 #include "P_samplers.h"
+#include "mvnorm.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -58,13 +59,16 @@ arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal",
 
 using namespace arma;
 // [[Rcpp::export]]
-arma::mat sample_P_classical(arma::mat &P, arma::mat &Z, arma::mat &Sigma,
-                             double sigma2, bool minibatch = true,
-                             int niter_metropolis = 50, double rho = 1.0) {
+arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
+                                            arma::mat &Sigma, double sigma2,
+                                            bool minibatch = true,
+                                            int niter_metropolis = 50,
+                                            double rho = 1.0) {
+  Rcpp::RNGScope scope;
   mat running_P = P;
   int n = running_P.n_rows;
 
-  vec rho_values = {1.0, 0.1, 10};
+  arma::rowvec rho_values = {1.0, 0.1, 10};
 
   uvec row_order;
 
@@ -75,23 +79,72 @@ arma::mat sample_P_classical(arma::mat &P, arma::mat &Z, arma::mat &Sigma,
   }
 
   // Loop over the individuals
-  uvec::iterator ind_end = row_order.end();
-  for (uvec::iterator ind_id = row_order.begin(); ind_id != ind_end; ++ind_id) {
-    // Sample the variance of the normal
+  int accepted_count = 0;
+  arma::uvec::iterator ind_end = row_order.end();
+  for (arma::uvec::iterator ind_id = row_order.begin(); ind_id != ind_end;
+       ++ind_id) {
     int indiv_idx = *ind_id;
-    double rho_iter =
-        rho * Rcpp::RcppArmadillo::sample(rho_values, 1, false)(0);
-    ;
+    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
+      // Sample the variance of the normal
+      double rho_iter =
+          rho * Rcpp::RcppArmadillo::sample(rho_values, 1, false)(0);
 
-    vec Pi_candidate = running_P.row(indiv_idx);
-    arma::rowvec noise =
-        arma::randn<arma::rowvec>(P.n_cols) * std::sqrt(rho_iter);
+      arma::rowvec Pi_candidate = running_P.row(indiv_idx);
+      arma::rowvec noise =
+          arma::randn<arma::rowvec>(P.n_cols) * std::sqrt(rho_iter);
 
-    Pi_candidate += noise;
+      Pi_candidate += noise;
 
-    double log_u = log(Rcpp::runif(1)(0));
+      arma::rowvec Pi_old = running_P.row(indiv_idx);
 
-    double log_accept = 0;
+      double log_u = log(Rcpp::runif(1)(0));
+
+      arma::uvec Zi_vec = find(Z.row(indiv_idx) == 1, 1, "first");
+      uint Zi = Zi_vec(0);
+
+      if (DEBUG_SAMPLE) {
+        Rcpp::Rcout << "Z_" << indiv_idx + 1 << " = " << Zi + 1 << std::endl;
+      }
+
+      arma::rowvec ind_mu =
+          mean_of_Pi_given_P_min_i_sigma(running_P, Sigma, sigma2, indiv_idx);
+      arma::mat ind_cov =
+          cov_of_Pi_given_P_min_i_sigma(running_P, Sigma, sigma2, indiv_idx);
+
+      double log_accept =
+          pivot_coord_inv(Pi_candidate, "orthonormal", true)(Zi) -
+          pivot_coord_inv(Pi_old, "orthonormal", true)(Zi);
+
+      if (DEBUG_SAMPLE) {
+        Rcpp::Rcout << "(multinom) accept_prob = " << exp(log_accept)
+                    << std::endl;
+      }
+
+      log_accept += dmvnorm(Pi_candidate, ind_mu, ind_cov, true)(0) -
+                    dmvnorm(Pi_old, ind_mu, ind_cov, true)(0);
+      if (DEBUG_SAMPLE) {
+        Rcpp::Rcout << "(multinom+mvnorm) accept_prob = " << exp(log_accept)
+                    << " | u = " << exp(log_u) << std::endl;
+      }
+
+      if (log_u < log_accept) {
+        if (DEBUG_SAMPLE) {
+          Rcpp::Rcout << "Accepted !" << std::endl << "Old Pi = ";
+          Pi_old.print(Rcpp::Rcout);
+          Rcpp::Rcout << "New Pi = ";
+          Pi_candidate.print(Rcpp::Rcout);
+        }
+
+        running_P.row(indiv_idx) = Pi_candidate;
+        accepted_count++;
+      }
+    }
+  }
+
+  if (DEBUG_SAMPLE) {
+    Rcpp::Rcout << "Mean accepted rate = "
+                << (float)accepted_count / (float)(niter_metropolis * n)
+                << std::endl;
   }
 
   return running_P;

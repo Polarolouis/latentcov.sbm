@@ -1,5 +1,6 @@
 #ifndef P_SAMPLERS_H
 #define P_SAMPLERS_H
+#define DEBUG_SAMPLE false
 
 #include "mvnorm.h"
 #include <RcppArmadillo.h>
