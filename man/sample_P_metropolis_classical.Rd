@@ -11,7 +11,8 @@ sample_P_metropolis_classical(
   sigma2,
   minibatch = TRUE,
   niter_metropolis = 50L,
-  rho = 1
+  rho = 1,
+  verbose = FALSE
 )
 }
 \arguments{
