@@ -1,4 +1,9 @@
-# Entropy, stolen from entropy package
+#' Calculate entropy of a probability distribution
+#'
+#' @param freqs A vector of frequencies or probabilities
+#' @param unit The logarithm base to use for entropy calculation. Options are "log", "log2", or "log10"
+#' @return The entropy value
+#' @export
 entropy <- function(freqs, unit = c("log", "log2", "log10")) {
   unit <- match.arg(unit)
 
@@ -12,22 +17,36 @@ entropy <- function(freqs, unit = c("log", "log2", "log10")) {
   return(H)
 }
 
+#' Calculate conditional entropy
+#'
+#' @param tab A contingency table (matrix)
+#' @param unit The logarithm base to use for entropy calculation. Options are "log", "log2", or "log10"
+#' @return The conditional entropy value
+#' @export
 conditional_entropy <- function(tab, unit = c("log", "log2", "log10")) {
   entropy(tab, unit = unit) - entropy(colSums(tab), unit = unit)
 }
 
+#' Calculate mutual information
+#'
+#' @param tab A contingency table (matrix)
+#' @param unit The logarithm base to use for entropy calculation. Options are "log", "log2", or "log10"
+#' @return The mutual information value
+#' @export
 mutual_information <- function(tab, unit = c("log", "log2", "log10")) {
   entropy(rowSums(tab), unit = unit) - conditional_entropy(tab, unit = unit)
 }
 
-#' A function to normalize each row of a given matrix
+#' Normalize each row of a matrix
 #'
-#' @param mat the matrix for which the rows must be normalized
-#' @param is_log a boolean indicating if the provided matrix is the
-#' log of the unnormalized one. Default to TRUE.
-#' @param tol the tolerance around which the values too close to 1 or
-#' 0 are clamped to 1-tol and tol. Default to NULL, meaning no
-#' clamping happens
+#' This function normalizes the rows of a matrix so that each row sums to 1.
+#' It can handle both log-scale and regular-scale matrices.
+#'
+#' @param mat The matrix to normalize
+#' @param is_log A boolean indicating if the provided matrix is the log of the unnormalized one. Default is TRUE.
+#' @param tol The tolerance around which values too close to 1 or 0 are clamped to 1-tol and tol. Default is NULL, meaning no clamping happens.
+#' @return The normalized matrix
+#' @export
 row_normalize_matrix <- function(mat, is_log = TRUE, tol = NULL) {
   if (!is_log) {
     mat <- log(mat)
@@ -43,11 +62,16 @@ row_normalize_matrix <- function(mat, is_log = TRUE, tol = NULL) {
   return(normalized_mat)
 }
 
-#' A function
+#' Build a covariance matrix from posterior samples
+#'
 #' @param posterior_array A posterior array in the form Iteration x Chain x Parameter.
-#' @param n the number of individuals, the rows of the outputted covariance matrix.
-#' @param K the number of blocks, in the latent continuous space there are K-1 columns.
-build_covariance_matrix <- function(posterior_array, n, K) {}
+#' @param n The number of individuals, the rows of the outputted covariance matrix.
+#' @param K The number of blocks, in the latent continuous space there are K-1 columns.
+#' @return A covariance matrix
+#' @export
+build_covariance_matrix <- function(posterior_array, n, K) {
+  # Function implementation would go here
+}
 
 
 stan_flatten <- function(x, name) {
