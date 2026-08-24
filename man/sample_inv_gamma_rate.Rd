@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate.R
 \name{sample_inv_gamma_rate}
 \alias{sample_inv_gamma_rate}
-\title{Sample frome the Inverse-Gamma}
+\title{Sample from the Inverse-Gamma}
 \usage{
 sample_inv_gamma_rate(shape, rate)
 }
@@ -10,6 +10,9 @@ sample_inv_gamma_rate(shape, rate)
 \item{shape}{the shape parameter of the inverse gamma}
 
 \item{rate}{the rate parameter of the inverse gamma}
+}
+\value{
+a sample drawn from the inverse gamma distribution
 }
 \description{
 Explicit inverse-gamma sampler using the identity:

@@ -50,6 +50,11 @@ alleviate label-switching}
     \item{\code{rho}}{a double indicating the variance of the gaussian proposal distribution.}
   }}
 }
+\value{
+A list of length \code{nchains} where each element is the output
+of a single call to \code{\link[=gibbs_sampling_lbm_poisson]{gibbs_sampling_lbm_poisson()}}.
+}
 \description{
-Run nchains of LBM Poisson Gibbs Sampler
+Runs several independent chains of \code{\link[=gibbs_sampling_lbm_poisson]{gibbs_sampling_lbm_poisson()}}
+concurrently, prefixing each chain logs with its index.
 }
