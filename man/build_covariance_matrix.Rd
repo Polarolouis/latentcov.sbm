@@ -2,17 +2,20 @@
 % Please edit documentation in R/utils.R
 \name{build_covariance_matrix}
 \alias{build_covariance_matrix}
-\title{A function}
+\title{Build a covariance matrix from posterior samples}
 \usage{
 build_covariance_matrix(posterior_array, n, K)
 }
 \arguments{
 \item{posterior_array}{A posterior array in the form Iteration x Chain x Parameter.}
 
-\item{n}{the number of individuals, the rows of the outputted covariance matrix.}
+\item{n}{The number of individuals, the rows of the outputted covariance matrix.}
 
-\item{K}{the number of blocks, in the latent continuous space there are K-1 columns.}
+\item{K}{The number of blocks, in the latent continuous space there are K-1 columns.}
+}
+\value{
+A covariance matrix
 }
 \description{
-A function
+Build a covariance matrix from posterior samples
 }

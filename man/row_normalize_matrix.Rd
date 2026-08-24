@@ -2,20 +2,21 @@
 % Please edit documentation in R/utils.R
 \name{row_normalize_matrix}
 \alias{row_normalize_matrix}
-\title{A function to normalize each row of a given matrix}
+\title{Normalize each row of a matrix}
 \usage{
 row_normalize_matrix(mat, is_log = TRUE, tol = NULL)
 }
 \arguments{
-\item{mat}{the matrix for which the rows must be normalized}
+\item{mat}{The matrix to normalize}
 
-\item{is_log}{a boolean indicating if the provided matrix is the
-log of the unnormalized one. Default to TRUE.}
+\item{is_log}{A boolean indicating if the provided matrix is the log of the unnormalized one. Default is TRUE.}
 
-\item{tol}{the tolerance around which the values too close to 1 or
-0 are clamped to 1-tol and tol. Default to NULL, meaning no
-clamping happens}
+\item{tol}{The tolerance around which values too close to 1 or 0 are clamped to 1-tol and tol. Default is NULL, meaning no clamping happens.}
+}
+\value{
+The normalized matrix
 }
 \description{
-A function to normalize each row of a given matrix
+This function normalizes the rows of a matrix so that each row sums to 1.
+It can handle both log-scale and regular-scale matrices.
 }
