@@ -12,9 +12,16 @@
 arma::mat pivot_coord_inv(arma::mat &x, std::string norm, bool log);
 
 // Classical sampling of P
-arma::mat sample_P_classical(arma::mat &P, arma::mat &Z, arma::mat &Sigma,
-                             double sigma2, bool minibatch,
-                             int niter_metropolis, double rho);
+arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
+                                            arma::mat &Sigma, double sigma2,
+                                            bool minibatch,
+                                            int niter_metropolis, double rho);
+
+// Sampling of P using smart kernel
+arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
+                                        arma::mat &Sigma, double sigma2,
+                                        bool minibatch, int niter_metropolis,
+                                        double rho);
 
 // Mean of Pi given P_min_i and Sigma
 arma::rowvec mean_of_Pi_given_P_min_i_sigma(arma::mat &P, arma::mat &Sigma,
