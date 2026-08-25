@@ -488,7 +488,7 @@ delabel_switch_stan_per_iteration <- function(draws, K, R, Psi_function = defaul
 #'
 #' @seealso [list_arrays_to_stan()], [list_stan_to_chains_stan()],
 #'   [delabel_switch_stan()]
-lbm_results_to_stan_draws <- function(lbm_results, K, R, Psi_function = default_Psi_function, find_permutation = find_permutation_alphas, apply_burnin_thinning = FALSE) {
+lbm_results_to_stan_draws <- function(lbm_results, K, R, Psi_function = default_Psi_function, find_permutation = find_permutation_alphas, apply_burnin_thinning = FALSE, delabel_switch = TRUE) {
   if (!is.null(names(lbm_results))) {
     message("Only one chain provided !")
     multiple_lbm_results <- list(lbm_results)
@@ -501,7 +501,7 @@ lbm_results_to_stan_draws <- function(lbm_results, K, R, Psi_function = default_
   stan_results <- list_stan_to_chains_stan(list_stan)
 
   draws <- posterior::as_draws_array(aperm(stan_results, c(1, 3, 2)))
-  if (is.null(names(lbm_results))) {
+  if (delabel_switch && is.null(names(lbm_results))) {
     message("Delabel switching")
     draws <- delabel_switch_stan(draws, K = K, R = R, Psi_function, find_permutation)
   }
@@ -617,4 +617,19 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
 #' @keywords internal
 .rev_one_hot <- function(X) {
   return(as.vector(max.col(X)))
+}
+
+#' A function to check the prior I use
+#'
+#' @param values the true values to see if they are in the credible interval
+#' @param prior_qfunction the prior's quantile function to obtain the bounds
+#' @param ... the parameters to provide to the quantile function
+#'
+#' @return a boolean vector of the size values indicating if the values are in the 95% credibility interval
+prior_checker <- function(values, prior_qfunction = qgamma, ...) {
+  crd_int <- prior_qfunction(c(0.025, 0.975), ...)
+  covered <- values >= crd_int[1] & values <= crd_int[2]
+  cat("Crd interval : [", crd_int[1], ";", crd_int[2], "]\n")
+  cat("Percentage of values covered = ", (sum(covered) / length(covered)) * 100, "%")
+  return(covered)
 }
