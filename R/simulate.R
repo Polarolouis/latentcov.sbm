@@ -755,8 +755,11 @@ gibbs_sampling_lbm_cov_poisson <- function(
   ### sigma2
   if (!sigma2_fixed) {
     current_sigma2 <- sample_inv_gamma_rate(shape = alpha_0, rate = beta_0)
+  } else if (is.numeric(sigma2_fixed)) {
+    message("Using sigma2=", sigma2_fixed)
+    current_sigma2 <- sigma2_fixed
   } else {
-    current_sigma2 <- 1L
+    current_sigma2 <- 1.0
   }
 
   ### P
@@ -804,9 +807,12 @@ gibbs_sampling_lbm_cov_poisson <- function(
     if (!sigma2_fixed) {
       sigma2_post_params <- param_sigma2_given_P(alpha_0 = alpha_0, beta_0, P = current_P, Theta = Theta)
       current_sigma2 <- sample_sigma2_given_P(shape = sigma2_post_params[["alpha"]], rate = sigma2_post_params[["beta"]])
+    } else if (is.numeric(sigma2_fixed)) {
+      current_sigma2 <- sigma2_fixed
     } else {
-      current_sigma2 <- 1
+      current_sigma2 <- 1.0
     }
+
     sigma2_array[iter, ] <- current_sigma2
 
     ### W | Z,Y,rho,alpha
