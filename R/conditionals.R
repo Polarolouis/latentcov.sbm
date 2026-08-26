@@ -10,19 +10,19 @@ TOL <- 1e-6
 #' @param i index of the row to compute the conditional for
 #' @return A list with mean and covariance of the conditional distribution
 cond_Pi_fast <- function(P, Theta, sigma2, i) {
-    n <- nrow(P)
-    K1 <- ncol(P)
+  n <- nrow(P)
+  K1 <- ncol(P)
 
-    idx <- setdiff(1:n, i)
+  idx <- setdiff(1:n, i)
 
-    Theta_ii <- Theta[i, i]
-    Theta_i_rest <- Theta[i, idx]
-    P_rest <- P[idx, , drop = FALSE]
+  Theta_ii <- Theta[i, i]
+  Theta_i_rest <- Theta[i, idx]
+  P_rest <- P[idx, , drop = FALSE]
 
-    mean_i <- -(1 / Theta_ii) * (Theta_i_rest %*% P_rest)
-    cov_i <- (sigma2 / Theta_ii) * diag(K1)
+  mean_i <- -(1 / Theta_ii) * (Theta_i_rest %*% P_rest)
+  cov_i <- (sigma2 / Theta_ii) * diag(K1)
 
-    list(mean = as.vector(mean_i), cov = cov_i)
+  list(mean = as.vector(mean_i), cov = cov_i)
 }
 
 #' Conditional distribution for Pi given P minus i and sigma
@@ -34,17 +34,17 @@ cond_Pi_fast <- function(P, Theta, sigma2, i) {
 #' @param i index of the row to compute the conditional for
 #' @return A list with mean and covariance of the conditional distribution
 cond_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, i) {
-    n <- nrow(P)
-    K_minus_1 <- ncol(P)
-    minus_i <- setdiff(1:n, i)
+  n <- nrow(P)
+  K_minus_1 <- ncol(P)
+  minus_i <- setdiff(1:n, i)
 
-    Si <- Sigma[i, minus_i, drop = FALSE] %*% solve(Sigma[minus_i, minus_i, drop = FALSE])
+  Si <- Sigma[i, minus_i, drop = FALSE] %*% solve(Sigma[minus_i, minus_i, drop = FALSE])
 
-    mean_i <- Si %*% P[minus_i, , drop = FALSE]
+  mean_i <- Si %*% P[minus_i, , drop = FALSE]
 
-    cov_i <- sigma2 * as.numeric(Sigma[i, i] - Si %*% Sigma[-i, i]) * diag(1, nrow = K_minus_1)
+  cov_i <- sigma2 * as.numeric(Sigma[i, i] - Si %*% Sigma[-i, i]) * diag(1, nrow = K_minus_1)
 
-    return(list(mean = mean_i, cov = cov_i))
+  return(list(mean = mean_i, cov = cov_i))
 }
 
 #' Sample from the conditional distribution of Pi
@@ -56,16 +56,16 @@ cond_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, i) {
 #' @param i index of the row to sample
 #' @return Sampled row of P
 sample_Pi_given <- function(P, Sigma, sigma2, i) {
-    res <- cond_Pi_given_P_min_i_sigma(P, Sigma, sigma2, i)
+  res <- cond_Pi_given_P_min_i_sigma(P, Sigma, sigma2, i)
 
-    # Draw from multivariate normal
-    Pi_sample <- MASS::mvrnorm(
-        n = 1,
-        mu = res$mean,
-        Sigma = res$cov
-    )
+  # Draw from multivariate normal
+  Pi_sample <- MASS::mvrnorm(
+    n = 1,
+    mu = res$mean,
+    Sigma = res$cov
+  )
 
-    return(Pi_sample)
+  return(Pi_sample)
 }
 
 #' Compute categorical distribution in ilr coordinates
@@ -75,8 +75,8 @@ sample_Pi_given <- function(P, Sigma, sigma2, i) {
 #' @param Pi latent position
 #' @return probability of the categorical distribution
 cat_dist_ilr_given_Pi <- function(Zi, Pi) {
-    probs <- pivotCoordInv(matrix(Pi, nrow = 1))
-    return(probs[Zi])
+  probs <- pivotCoordInv(matrix(Pi, nrow = 1))
+  return(probs[Zi])
 }
 
 #' Compute posterior parameters for inverse gamma distribution
@@ -88,7 +88,7 @@ cat_dist_ilr_given_Pi <- function(Zi, Pi) {
 #' @param Theta precision matrix (inverse of Sigma)
 #' @return A list with alpha and beta parameters of the posterior inverse gamma
 posterior_param_inv_gamma <- param_sigma2_given_P <- function(alpha_0, beta_0, P, Theta) {
-    return(list(alpha = alpha_0 + (nrow(P) / 2), beta = beta_0 + 0.5 * sum(diag(t(P) %*% Theta %*% P))))
+  return(list(alpha = alpha_0 + (nrow(P) / 2), beta = beta_0 + 0.5 * sum(diag(t(P) %*% Theta %*% P))))
 }
 
 #' Sample from the Inverse-Gamma
@@ -100,7 +100,7 @@ posterior_param_inv_gamma <- param_sigma2_given_P <- function(alpha_0, beta_0, P
 #' @param rate the rate parameter of the inverse gamma
 #' @return a sample drawn from the inverse gamma distribution
 sample_inv_gamma_rate <- sample_sigma2_given_P <- function(shape, rate) {
-    return(1 / rgamma(n = 1, shape = shape, rate = rate))
+  return(1 / rgamma(n = 1, shape = shape, rate = rate))
 }
 
 ## CLASSICAL LBM Z and pi
@@ -119,7 +119,7 @@ sample_inv_gamma_rate <- sample_sigma2_given_P <- function(shape, rate) {
 #'
 #' @return a vector of size K with the updated Dirichlet parameters
 param_pi_given_Z <- function(etas, Z) {
-    etas + colSums(Z)
+  etas + colSums(Z)
 }
 
 #' Sample from the posterior \eqn{\pi \mid Z}
@@ -131,7 +131,7 @@ param_pi_given_Z <- function(etas, Z) {
 #'
 #' @seealso [param_pi_given_Z()] for the computations of the posterior parameters
 sample_pi_given_Z <- function(etas_post) {
-    as.vector(MCMCpack::rdirichlet(n = 1, alpha = etas_post))
+  as.vector(MCMCpack::rdirichlet(n = 1, alpha = etas_post))
 }
 
 # Z | alpha, pi, Y, W
@@ -153,11 +153,11 @@ sample_pi_given_Z <- function(etas_post) {
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
 param_multinom_probs_Z_poisson <- function(Y, alpha, W, pi, tol = TOL) {
-    R_W <- Y %*% W
-    N_W <- diag(colSums(W))
-    unormalized_log_probs <- matrix(1, nrow = nrow(Y)) %*% log(pi) + R_W %*% log(t(alpha)) - matrix(1, nrow = nrow(Y), ncol = ncol(W)) %*% N_W %*% t(alpha)
+  R_W <- Y %*% W
+  N_W <- diag(colSums(W))
+  unormalized_log_probs <- matrix(1, nrow = nrow(Y)) %*% log(pi) + R_W %*% log(t(alpha)) - matrix(1, nrow = nrow(Y), ncol = ncol(W)) %*% N_W %*% t(alpha)
 
-    return(row_normalize_matrix(unormalized_log_probs, tol = tol))
+  return(row_normalize_matrix(unormalized_log_probs, tol = tol))
 }
 
 #' Sample row-block memberships Z
@@ -169,9 +169,9 @@ param_multinom_probs_Z_poisson <- function(Y, alpha, W, pi, tol = TOL) {
 #'
 #' @return an integer vector of length \eqn{n_1} with one sampled group label per row node
 sample_Z_given_alpha_pi_Y_W <- function(probs) {
-    sapply(seq_len(nrow(probs)), function(i) {
-        sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
-    })
+  sapply(seq_len(nrow(probs)), function(i) {
+    sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
+  })
 }
 
 ## END OF CLASSICAL LBM
@@ -187,7 +187,7 @@ sample_Z_given_alpha_pi_Y_W <- function(probs) {
 #'
 #' @return a vector of size R with the updated Dirichlet parameters
 param_rho_given_W <- function(gammas, W) {
-    gammas + colSums(W)
+  gammas + colSums(W)
 }
 
 #' Sample from the posterior \eqn{\rho\mid W}
@@ -200,7 +200,7 @@ param_rho_given_W <- function(gammas, W) {
 #'
 #' @seealso [param_rho_given_W()] for the computations of the posterior parameters
 sample_rho_given_W <- function(gammas_post) {
-    as.vector(MCMCpack::rdirichlet(n = 1, alpha = gammas_post))
+  as.vector(MCMCpack::rdirichlet(n = 1, alpha = gammas_post))
 }
 
 # Z | alpha, P, Y, W
@@ -224,11 +224,11 @@ sample_rho_given_W <- function(gammas_post) {
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
 param_multinom_probs_Z_cov_poisson <- function(Y, alpha, W, P, tol = TOL) {
-    R_W <- Y %*% W
-    N_W <- diag(colSums(W))
-    unormalized_log_probs <- log(pivotCoordInv(P)) + R_W %*% log(t(alpha)) - matrix(1, nrow = nrow(Y), ncol = ncol(W)) %*% N_W %*% t(alpha)
+  R_W <- Y %*% W
+  N_W <- diag(colSums(W))
+  unormalized_log_probs <- log(pivotCoordInv(P)) + R_W %*% log(t(alpha)) - matrix(1, nrow = nrow(Y), ncol = ncol(W)) %*% N_W %*% t(alpha)
 
-    return(row_normalize_matrix(unormalized_log_probs, tol = tol))
+  return(row_normalize_matrix(unormalized_log_probs, tol = tol))
 }
 
 #' Sample row-block memberships Z
@@ -240,9 +240,9 @@ param_multinom_probs_Z_cov_poisson <- function(Y, alpha, W, P, tol = TOL) {
 #'
 #' @return an integer vector of length \eqn{n_1} with one sampled group label per row node
 sample_Z_given_alpha_P_Y_W <- function(probs) {
-    sapply(seq_len(nrow(probs)), function(i) {
-        sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
-    })
+  sapply(seq_len(nrow(probs)), function(i) {
+    sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
+  })
 }
 
 # W | alpha, rho, Y, Z
@@ -263,11 +263,11 @@ sample_Z_given_alpha_P_Y_W <- function(probs) {
 #'
 #' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
 param_multinom_probs_W_poisson <- function(Y, alpha, Z, rho, tol = TOL) {
-    R_Z <- t(Y) %*% Z
-    N_Z <- diag(colSums(Z))
-    unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*% log(rho) + R_Z %*% log(alpha) - matrix(1, nrow = ncol(Y), ncol = ncol(Z)) %*% N_Z %*% alpha
+  R_Z <- t(Y) %*% Z
+  N_Z <- diag(colSums(Z))
+  unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*% log(rho) + R_Z %*% log(alpha) - matrix(1, nrow = ncol(Y), ncol = ncol(Z)) %*% N_Z %*% alpha
 
-    return(row_normalize_matrix(unormalized_log_probs, tol = tol))
+  return(row_normalize_matrix(unormalized_log_probs, tol = tol))
 }
 
 #' Sample column-block memberships W
@@ -279,9 +279,9 @@ param_multinom_probs_W_poisson <- function(Y, alpha, Z, rho, tol = TOL) {
 #'
 #' @return an integer vector of length \eqn{n_2} with one sampled group label per column node
 sample_W_given_alpha_rho_Y_Z <- function(probs) {
-    sapply(seq_len(nrow(probs)), function(i) {
-        sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
-    })
+  sapply(seq_len(nrow(probs)), function(i) {
+    sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
+  })
 }
 
 
@@ -302,7 +302,7 @@ sample_W_given_alpha_rho_Y_Z <- function(probs) {
 #'
 #' @return a list with `shape` and `rate` matrices (\eqn{K \times R}) of the posterior Gamma parameters
 param_alpha_given_Y_Z_W_poisson <- function(a0, b0, Y, Z, W) {
-    return(list(shape = a0 + t(Z) %*% Y %*% W, rate = b0 + t(Z) %*% matrix(1, nrow = nrow(Z), ncol = nrow(W)) %*% W))
+  return(list(shape = a0 + t(Z) %*% Y %*% W, rate = b0 + t(Z) %*% matrix(1, nrow = nrow(Z), ncol = nrow(W)) %*% W))
 }
 
 #' Sample the connectivity matrix alpha
@@ -315,5 +315,5 @@ param_alpha_given_Y_Z_W_poisson <- function(a0, b0, Y, Z, W) {
 #'
 #' @return a matrix (\eqn{K \times R}) of sampled connectivity coefficients
 sample_alpha_given_Y_Z_W_poisson <- function(shape, rate) {
-    matrix(rgamma(length(shape), shape = shape, rate = rate), nrow = nrow(shape))
+  matrix(rgamma(length(shape), shape = shape, rate = rate), nrow = nrow(shape))
 }
