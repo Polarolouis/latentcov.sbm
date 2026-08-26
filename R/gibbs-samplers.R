@@ -35,8 +35,8 @@
 #' @param known_W NULL (default) or a matrix (\eqn{n_2\times R})
 #' indicating the known columns block memberships
 #' @param force_order a boolean indicating if the order the groups
-#' \eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the decreasing
-#' marginals order(pi%*%alpha,decreasing=TRUE) and
+#' \eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the
+#' decreasing marginals order(pi%*%alpha,decreasing=TRUE) and
 #' order(alpha %*% rho,decreasing=TRUE) to
 #' alleviate label-switching
 #'
@@ -46,7 +46,7 @@
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
 #' @export
 gibbs_sampling_lbm_poisson <- function(
-  Y, init_Z, init_W, K, R,
+  Y, K, R,
   niter = 50L,
   priors_hyper_params = list(
       etas_0 = rep(2, K),
@@ -54,6 +54,8 @@ gibbs_sampling_lbm_poisson <- function(
       a0 = 1, b0 = 1
   ),
   rho = 1,
+  init_Z = NULL,
+  init_W = NULL,
   known_alpha = NULL,
   known_W = NULL,
   known_Z = NULL,
@@ -112,10 +114,13 @@ gibbs_sampling_lbm_poisson <- function(
         Z <- init_Z
     }
 
+    pb <- progressr::progressor(niter)
+
     for (iter in seq(niter)) {
         if (iter %% 10 == 0) {
             message(prefix, "Iter : ", iter, " on ", niter)
         }
+        pb(sprintf("%sIter : %d on %d", prefix, iter, niter), class = if (iter %% 10 == 0) "sticky", amount = 0)
         ### rho | W
         current_gammas <- param_rho_given_W(gammas = gammas_0, W)
         current_rho <- sample_rho_given_W(gammas_post = current_gammas)
@@ -174,8 +179,11 @@ gibbs_sampling_lbm_poisson <- function(
             (seq(K) == Z_label) * 1
         }))
         Z_array[iter, ] <- current_Z_memb
+        pb()
     }
-    return(list(W_array = W_array, Z_array = Z_array, rho_array = rho_array, pi_array = pi_array, alpha_array = alpha_array))
+    out_list <- list(W_array = W_array, Z_array = Z_array, rho_array = rho_array, pi_array = pi_array, alpha_array = alpha_array)
+
+    return(posterior::as_draws_array(list_arrays_to_stan(array_list = out_list)))
 }
 
 #' Run nchains of LBM Poisson Gibbs Sampler
@@ -190,9 +198,14 @@ gibbs_sampling_lbm_poisson <- function(
 #'   of a single call to [gibbs_sampling_lbm_poisson()].
 #' @export
 chains_gibbs_sampling_lbm_poisson <- function(nchains, ...) {
-    lapply(seq(nchains), function(i) {
+    out_list <- lapply(seq(nchains), function(i) {
         gibbs_sampling_lbm_poisson(..., prefix = paste0("Chain ", i, " - "))
     }) |> futurize::futurize(seed = TRUE)
+    out_draws <- out_list[[1]]
+    for (idx in seq_along(out_list[-1])) {
+        out_draws <- posterior::bind_draws(out_draws, out_list[[idx + 1]], along = "chain")
+    }
+    return(out_draws)
 }
 
 ## Full LBM with latent phylo Poisson
@@ -247,7 +260,7 @@ chains_gibbs_sampling_lbm_poisson <- function(nchains, ...) {
 #' @export
 gibbs_sampling_lbm_cov_poisson <- function(
   Sigma, Y, init_Z, init_W, K, R,
-  niter = 50L, niter_metropolis = 10L,
+  niter = 50L, niter_metropolis = 1L,
   priors_hyper_params = list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), a0 = 1, b0 = 1),
   rho = 1,
   sigma2_fixed = TRUE,
@@ -255,7 +268,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
   known_P = NULL,
   known_W = NULL,
   known_Z = NULL,
-  P_sampler = sample_P_metropolis_trick,
+  P_sampler = sample_P_metropolis_trick_cpp,
   minibatch = TRUE,
   tol = TOL,
   verbose = FALSE,
@@ -325,11 +338,13 @@ gibbs_sampling_lbm_cov_poisson <- function(
     } else {
         Z <- init_Z
     }
+    pb <- progressr::progressor(niter)
 
     for (iter in seq(niter)) {
         if (iter %% 10 == 0) {
             message(prefix, "Iter : ", iter, " on ", niter)
         }
+        pb(sprintf("%sIter : %d on %d", prefix, iter, niter), class = if (iter %% 10 == 0) "sticky", amount = 0)
         ### rho | W
         current_gammas <- param_rho_given_W(gammas = gammas_0, W)
         current_rho <- sample_rho_given_W(gammas_post = current_gammas)
@@ -389,8 +404,10 @@ gibbs_sampling_lbm_cov_poisson <- function(
             (seq(K) == Z_label) * 1
         }))
         Z_array[iter, ] <- current_Z_memb
+        pb()
     }
-    return(list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_array = Z_array, rho_array = rho_array, alpha_array = alpha_array))
+    out_list <- list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_array = Z_array, rho_array = rho_array, alpha_array = alpha_array)
+    return(posterior::as_draws_array(list_arrays_to_stan(array_list = out_list)))
 }
 
 #' Run nchains of the latent phylogenetic Poisson LBM Gibbs sampler
@@ -405,7 +422,12 @@ gibbs_sampling_lbm_cov_poisson <- function(
 #'   of a single call to [gibbs_sampling_lbm_cov_poisson()].
 #' @export
 chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, ...) {
-    lapply(seq(nchains), function(i) {
+    out_list <- lapply(seq(nchains), function(i) {
         gibbs_sampling_lbm_cov_poisson(..., prefix = paste0("Chain ", i, " - "))
     }) |> futurize::futurize(seed = TRUE)
+    out_draws <- out_list[[1]]
+    for (idx in seq_along(out_list[-1])) {
+        out_draws <- posterior::bind_draws(out_draws, out_list[[idx + 1]], along = "chain")
+    }
+    return(out_draws)
 }

@@ -294,11 +294,13 @@ delabel_switch_stan <- function(draws, K, R, Psi_function = default_Psi_function
   start_alpha_var <- head(var_idx_alphas, 1)
   end_alpha_var <- tail(var_idx_alphas, 1)
 
-  mean_alphas_array <- apply(draws[, , var_idx_alphas], 2:3, mean)
+  mean_alphas_array <- apply(posterior::subset_draws(draws, variable = "alpha"), 2:3, mean)
 
   alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) matrix(mean_alphas_array[row, ], nrow = K, ncol = R))
+
   alpha_ref <- alpha_matrices[[1]]
   alpha_matrices <- alpha_matrices[-1]
+
 
   permutations_list <- lapply(alpha_matrices, find_permutations, alpha_ref = alpha_ref)
 
