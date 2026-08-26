@@ -4,7 +4,7 @@ set.seed(seed)
 # Rows
 K <- 3
 sigma2star <- 1
-npc <- 30
+npc <- 10
 n1 <- npc * K
 phylo_memberships <- rep(seq(K), each = npc)
 rho_within <- 0.9
@@ -22,4 +22,9 @@ Sigma[same_cluster] <- rho_within
 diag(Sigma) <- 1
 
 
-Pnonindep <- simulate_P_and_Z(K = K, Sigma, sigma2star)[["P"]]
+simulation <- simulate_P_and_Z(K = K, Sigma, sigma2star)
+
+Pnonindep <- simulation[["P"]]
+
+Z_labs <- simulation[["Z"]]
+Znonindep <- .one_hot(as.vector(Z_labs), K)
