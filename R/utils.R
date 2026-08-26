@@ -285,6 +285,7 @@ perm_matrix_from_order <- function(order) {
 #' @return The relabelled draws array, with the same structure as `draws`.
 #'
 #' @seealso [lbm_results_to_stan_draws()], [find_permutation_alphas()]
+#' @export
 #' @importFrom utils head tail
 delabel_switch_stan <- function(draws, K, R, Psi_function = default_Psi_function, find_permutations = find_permutation_alphas_L2) {
   stopifnot("There must be at least two chains" = dim(draws)[2] > 1)
@@ -298,6 +299,93 @@ delabel_switch_stan <- function(draws, K, R, Psi_function = default_Psi_function
   alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) matrix(mean_alphas_array[row, ], nrow = K, ncol = R))
   alpha_ref <- alpha_matrices[[1]]
   alpha_matrices <- alpha_matrices[-1]
+
+  permutations_list <- lapply(alpha_matrices, find_permutations, alpha_ref = alpha_ref)
+
+  # Apply permutations to relabel all chains
+  draws_delabeled <- draws
+  Psi <- Psi_function(K)
+
+  # Process each chain starting from chain 2 (chain 1 is the reference)
+  for (chain_idx in 2:dim(draws)[2]) {
+    perm <- permutations_list[[chain_idx - 1]]
+    row_perm <- perm$row_perm
+    col_perm <- perm$col_perm
+
+    # Apply row permutation to alpha
+    for (iter in seq(posterior::niterations(draws))) {
+      alpha_matrix <- matrix(draws[iter, chain_idx, start_alpha_var:end_alpha_var], nrow = K, ncol = R)
+      alpha_matrix <- alpha_matrix[row_perm, col_perm, drop = FALSE]
+      draws_delabeled[iter, chain_idx, start_alpha_var:end_alpha_var] <- as.vector(alpha_matrix)
+    }
+
+    # Apply column permutation to other block-indexed parameters
+
+    ## rho
+
+    rho_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "rho"))
+    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][, , col_perm, drop = FALSE]
+
+    ##  pi (if they exists)
+    pi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "pi"))
+    if (length(pi_idx) > 0) {
+      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][, , row_perm, drop = FALSE]
+    }
+
+    ## P
+    P_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "P"))
+
+    Perm_mat <- perm_matrix_from_order(row_perm)
+    T_c <- round(Psi %*% Perm_mat %*% t(Psi), digits = 10)
+    nind <- length(P_idx) / (K - 1)
+    for (it in seq_len(posterior::niterations(draws_delabeled))) {
+      # reconstruction de la matrice P
+      Pmat <- matrix(
+        draws[it, chain_idx, P_idx],
+        nrow = nind,
+        ncol = K - 1,
+        byrow = FALSE
+      )
+
+      # permutation
+      Pmat <- Pmat %*% t(T_c)
+
+      # remise dans le draws_array
+      draws_delabeled[it, chain_idx, P_idx] <- c(Pmat)
+    }
+
+    # Z
+    Z_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "Z"))
+    chain_Z <- draws[, chain_idx, Z_idx]
+    draws_delabeled[, chain_idx, Z_idx] <- array(
+      row_perm[chain_Z],
+      dim = dim(chain_Z)
+    )
+
+    # W
+    W_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "W"))
+    chain_W <- draws[, chain_idx, W_idx]
+    draws_delabeled[, chain_idx, W_idx] <- array(
+      col_perm[chain_W],
+      dim = dim(chain_W)
+    )
+  }
+
+  return(draws_delabeled)
+}
+
+
+delabel_switch_stan_true <- function(draws, K, R, Psi_function = default_Psi_function, find_permutations = find_permutation_alphas_L2, true_alpha) {
+  stopifnot("There must be at least two chains" = dim(draws)[2] > 1)
+
+  var_idx_alphas <- which(startsWith(dimnames(draws)[[3]], "alpha"))
+  start_alpha_var <- head(var_idx_alphas, 1)
+  end_alpha_var <- tail(var_idx_alphas, 1)
+
+  mean_alphas_array <- apply(draws[, , var_idx_alphas], 2:3, mean)
+
+  alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) matrix(mean_alphas_array[row, ], nrow = K, ncol = R))
+  alpha_ref <- true_alpha
 
   permutations_list <- lapply(alpha_matrices, find_permutations, alpha_ref = alpha_ref)
 
@@ -632,4 +720,40 @@ prior_checker <- function(values, prior_qfunction = qgamma, ...) {
   cat("Crd interval : [", crd_int[1], ";", crd_int[2], "]\n")
   cat("Percentage of values covered = ", (sum(covered) / length(covered)) * 100, "%")
   return(covered)
+}
+
+#' Compute the sum of squared errors between two objects
+#'
+#' @param x a numeric vector, matrix or array
+#' @param y a numeric vector, matrix or array of the same shape as `x`
+#'
+#' @return the sum of squared differences between `x` and `y`
+mse <- function(x, y) sum((x - y)^2)
+
+
+#' Inverse pivot coordinate transformation
+#'
+#' Performs the inverse pivot coordinate transformation for the latent covariance stochastic block model
+#' @param x Input matrix
+#' @param norm Normalization type ("orthogonal" or "orthonormal")
+#' @return Transformed matrix
+pivotCoordInv <- function(x, norm = "orthonormal") {
+  if (!(norm %in% c("orthogonal", "orthonormal"))) stop("only orthogonal and orthonormal is allowd for norm")
+  x <- -x
+  y <- matrix(0, nrow = nrow(x), ncol = ncol(x) + 1)
+  D <- ncol(x) + 1
+  if (norm == "orthonormal") y[, 1] <- -sqrt((D - 1) / D) * x[, 1] else y[, 1] <- x[, 1]
+  for (i in 2:ncol(y)) {
+    for (j in 1:(i - 1)) {
+      y[, i] <- y[, i] + x[, j] / if (norm == "orthonormal") sqrt((D - j + 1) * (D - j)) else 1
+    }
+  }
+  for (i in 2:(ncol(y) - 1)) {
+    y[, i] <- y[, i] - x[, i] * if (norm == "orthonormal") sqrt((D - i) / (D - i + 1)) else 1
+  }
+  yexp <- exp(y - apply(y, 1, max))
+  x.back <- yexp / apply(yexp, 1, sum) # * rowSums(derOriginaldaten)
+  if (is.data.frame(x)) x.back <- data.frame(x.back)
+  return(x.back)
+  # return(yexp)
 }
