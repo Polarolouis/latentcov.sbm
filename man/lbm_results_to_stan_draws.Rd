@@ -10,7 +10,8 @@ lbm_results_to_stan_draws(
   R,
   Psi_function = default_Psi_function,
   find_permutation = find_permutation_alphas,
-  apply_burnin_thinning = FALSE
+  apply_burnin_thinning = FALSE,
+  delabel_switch = TRUE
 )
 }
 \arguments{

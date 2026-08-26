@@ -11,6 +11,8 @@
 #' @param norm Normalization type ("orthogonal" or "orthonormal")
 #' @param log if \code{TRUE}, the log-probabilities are returned
 #' @return A matrix (\eqn{n \times K}) of (log) simplex probabilities
+#'
+#' @export
 pivot_coord_inv <- function(x, norm = "orthonormal", log = FALSE) {
     .Call(`_latentcov_sbm_pivot_coord_inv`, x, norm, log)
 }
@@ -38,6 +40,10 @@ pivot_coord_inv <- function(x, norm = "orthonormal", log = FALSE) {
 #'   distribution.
 #' @return an updated matrix of latent positions, of the same size as
 #'   \code{P}
+#' @seealso [sample_P_metropolis_classical()],
+#' [sample_P_metropolis_trick()],
+#' [sample_P_metropolis_trick_cpp()]
+#' @export
 sample_P_metropolis_classical_cpp <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1.0) {
     .Call(`_latentcov_sbm_sample_P_metropolis_classical_cpp`, P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho)
 }
@@ -49,25 +55,15 @@ sample_P_metropolis_classical_cpp <- function(P, Z, Sigma, sigma2, minibatch = T
 #' the Gaussian terms cancel in the acceptance ratio, leaving only the
 #' multinomial prior ratio. This is the C++ version of
 #' \code{sample_P_metropolis_trick}.
-#' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent
-#'   position of the nodes probabilities of membership in the latent space
-#' @param Z a matrix of size \eqn{n_1\times K} with a single 1 per line
-#'   indicating the membership of row node \eqn{i}, \eqn{Z_{i,k} = 1} if
-#'   \eqn{i} is in group \eqn{k} 0 else
-#' @param Sigma a covariance matrix describing the covariance between row
-#'   nodes \eqn{(n_1\times n_1)}
-#' @param sigma2 a variance parameter indicating the variance between the
-#'   K-1 columns of P
-#' @param minibatch a boolean indicating wether to update the rows in the
-#'   lexical order or to sample at each iteration. Default to TRUE
-#' @param niter_metropolis an integer specifying the number of metropolis
-#'   iterations to perform. Defaults to 50.
-#' @param rho unused: the proposal has no tunable step size. Kept for
-#'   interface compatibility with \code{sample_P_metropolis_classical_cpp}.
-#' @return an updated matrix of latent positions, of the same size as
-#'   \code{P}
-sample_P_metropolis_trick_cpp <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1.0) {
-    .Call(`_latentcov_sbm_sample_P_metropolis_trick_cpp`, P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho)
+#' @inheritParams sample_P_metropolis_trick
+#' @return an updated matrix of latent positions, of the same size
+#' as \code{P}
+#' @seealso [sample_P_metropolis_classical()],
+#' [sample_P_metropolis_classical_cpp()],
+#' [sample_P_metropolis_trick()]
+#' @export
+sample_P_metropolis_trick_cpp <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L) {
+    .Call(`_latentcov_sbm_sample_P_metropolis_trick_cpp`, P, Z, Sigma, sigma2, minibatch, niter_metropolis)
 }
 
 #' Mean of Pi given P minus i and Sigma (C++)

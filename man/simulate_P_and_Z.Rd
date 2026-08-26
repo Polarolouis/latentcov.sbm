@@ -4,7 +4,7 @@
 \alias{simulate_P_and_Z}
 \title{Simulate P and Z matrices}
 \usage{
-simulate_P_and_Z(K, Sigma, sigma2, rep_Z)
+simulate_P_and_Z(K, Sigma, sigma2)
 }
 \arguments{
 \item{K}{number of clusters}

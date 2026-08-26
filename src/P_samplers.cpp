@@ -13,6 +13,8 @@
 //' @param norm Normalization type ("orthogonal" or "orthonormal")
 //' @param log if \code{TRUE}, the log-probabilities are returned
 //' @return A matrix (\eqn{n \times K}) of (log) simplex probabilities
+//'
+//' @export
 // [[Rcpp::export]]
 arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal",
                           bool log = false) {
@@ -91,6 +93,10 @@ using namespace arma;
 //'   distribution.
 //' @return an updated matrix of latent positions, of the same size as
 //'   \code{P}
+//' @seealso [sample_P_metropolis_classical()],
+//' [sample_P_metropolis_trick()],
+//' [sample_P_metropolis_trick_cpp()]
+//' @export
 // [[Rcpp::export]]
 arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
                                             arma::mat &Sigma, double sigma2,
@@ -190,31 +196,19 @@ arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
 //' the Gaussian terms cancel in the acceptance ratio, leaving only the
 //' multinomial prior ratio. This is the C++ version of
 //' \code{sample_P_metropolis_trick}.
-//' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent
-//'   position of the nodes probabilities of membership in the latent space
-//' @param Z a matrix of size \eqn{n_1\times K} with a single 1 per line
-//'   indicating the membership of row node \eqn{i}, \eqn{Z_{i,k} = 1} if
-//'   \eqn{i} is in group \eqn{k} 0 else
-//' @param Sigma a covariance matrix describing the covariance between row
-//'   nodes \eqn{(n_1\times n_1)}
-//' @param sigma2 a variance parameter indicating the variance between the
-//'   K-1 columns of P
-//' @param minibatch a boolean indicating wether to update the rows in the
-//'   lexical order or to sample at each iteration. Default to TRUE
-//' @param niter_metropolis an integer specifying the number of metropolis
-//'   iterations to perform. Defaults to 50.
-//' @param rho unused: the proposal has no tunable step size. Kept for
-//'   interface compatibility with \code{sample_P_metropolis_classical_cpp}.
-//' @return an updated matrix of latent positions, of the same size as
-//'   \code{P}
+//' @inheritParams sample_P_metropolis_trick
+//' @return an updated matrix of latent positions, of the same size
+//' as \code{P}
+//' @seealso [sample_P_metropolis_classical()],
+//' [sample_P_metropolis_classical_cpp()],
+//' [sample_P_metropolis_trick()]
+//' @export
 // [[Rcpp::export]]
 arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
                                         arma::mat &Sigma, double sigma2,
                                         bool minibatch = true,
-                                        int niter_metropolis = 50,
-                                        double rho = 1.0) {
+                                        int niter_metropolis = 50) {
   Rcpp::RNGScope scope;
-  (void)rho; // unused: the proposal has no tunable step size
   mat running_P = P;
   int n = running_P.n_rows;
 
