@@ -4,7 +4,7 @@
 #' @param K number of clusters
 #' @param Sigma covariance matrix
 #' @param sigma2 variance parameter
-#' @param rep_Z number of replicates for Z
+#'
 #' @return A list containing Z, P, and probs
 #' @importFrom stats rmultinom
 #' @export
