@@ -196,6 +196,7 @@ arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
 //' the Gaussian terms cancel in the acceptance ratio, leaving only the
 //' multinomial prior ratio. This is the C++ version of
 //' \code{sample_P_metropolis_trick}.
+//' @param rho unused double for compatibility only
 //' @inheritParams sample_P_metropolis_trick
 //' @return an updated matrix of latent positions, of the same size
 //' as \code{P}
@@ -207,8 +208,10 @@ arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
 arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
                                         arma::mat &Sigma, double sigma2,
                                         bool minibatch = true,
-                                        int niter_metropolis = 50) {
+                                        int niter_metropolis = 50,
+                                        double rho = 1.0) {
   Rcpp::RNGScope scope;
+  (void)rho;
   mat running_P = P;
   int n = running_P.n_rows;
 
@@ -271,6 +274,114 @@ arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
     Rcpp::Rcout << "Mean accepted rate = "
                 << (float)accepted_count / (float)(niter_metropolis * n)
                 << std::endl;
+  }
+
+  return running_P;
+};
+
+//' @inheritParams sample_P_metropolis_trick
+//' @param block_size the size of blocks to update simultaneously (default: 1
+// for individual updates) ' @return an updated matrix of latent positions, of
+// the same size ' as \code{P} ' @seealso [sample_P_metropolis_classical()], '
+//[sample_P_metropolis_classical_cpp()], ' [sample_P_metropolis_trick()] '
+//@export
+// [[Rcpp::export]]
+arma::mat sample_P_metropolis_trick_cpp_block(arma::mat &P, arma::mat &Z,
+                                              arma::mat &Sigma, double sigma2,
+                                              bool minibatch = true,
+                                              int niter_metropolis = 50,
+                                              double rho = 1.0,
+                                              int block_size = 1) {
+  Rcpp::RNGScope scope;
+  (void)rho;
+  mat running_P = P;
+  int n = running_P.n_rows;
+
+  arma::uvec row_order;
+
+  if (minibatch) {
+    row_order = arma::randperm(n);
+  } else {
+    row_order = arma::regspace<uvec>(0, n - 1);
+  }
+
+  // Loop over the individuals in blocks
+  int accepted_count = 0;
+  int total_proposals = 0;
+
+  // Process individuals in blocks
+  arma::uvec::iterator ind_end = row_order.end();
+  arma::uvec::iterator ind_id = row_order.begin();
+
+  while (ind_id != ind_end) {
+    // Determine the current block size (may be smaller for the last block)
+    int current_block_size = std::min(block_size, (int)(ind_end - ind_id));
+
+    // Collect indices for the current block
+    arma::uvec block_indices(current_block_size);
+    for (int i = 0; i < current_block_size; ++i) {
+      block_indices(i) = *(ind_id + i);
+    }
+
+    // For each iteration of Metropolis-Hastings within the block
+    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
+      // Store old values for all individuals in the block
+      arma::mat old_P_block = running_P.rows(block_indices);
+
+      // Generate proposals for all individuals in the block
+      arma::mat new_P_block(old_P_block.n_rows, old_P_block.n_cols);
+
+      // For each individual in the block, compute conditional distribution and
+      // propose
+      for (int i = 0; i < current_block_size; ++i) {
+        int indiv_idx = block_indices(i);
+
+        // Conditional distribution of Pi given P_minus_i
+        arma::rowvec ind_mu =
+            mean_of_Pi_given_P_min_i_sigma(running_P, Sigma, sigma2, indiv_idx);
+        arma::mat ind_cov =
+            cov_of_Pi_given_P_min_i_sigma(running_P, Sigma, sigma2, indiv_idx);
+
+        // Proposal drawn from the conditional Gaussian
+        arma::rowvec Pi_old = running_P.row(indiv_idx);
+        arma::rowvec Pi_candidate = rmvnorm(1, ind_mu, ind_cov).row(0);
+        new_P_block.row(i) = Pi_candidate;
+      }
+
+      // Compute acceptance probability for the entire block
+      double log_accept_total = 0.0;
+      for (int i = 0; i < current_block_size; ++i) {
+        int indiv_idx = block_indices(i);
+        arma::rowvec Pi_old = old_P_block.row(i);
+        arma::rowvec Pi_candidate = new_P_block.row(i);
+
+        arma::uvec Zi_vec = find(Z.row(indiv_idx) == 1, 1, "first");
+        uint Zi = Zi_vec(0);
+
+        double log_accept_single =
+            pivot_coord_inv(Pi_candidate, "orthonormal", true)(Zi) -
+            pivot_coord_inv(Pi_old, "orthonormal", true)(Zi);
+
+        log_accept_total += log_accept_single;
+      }
+
+      double log_u = log(Rcpp::runif(1)(0));
+      total_proposals += current_block_size;
+
+      if (log_u < log_accept_total) {
+        // Accept the entire block
+        running_P.rows(block_indices) = new_P_block;
+        accepted_count += current_block_size;
+      }
+    }
+
+    // Move to the next block
+    std::advance(ind_id, current_block_size);
+  }
+
+  if (DEBUG_SAMPLE) {
+    Rcpp::Rcout << "Mean accepted rate = "
+                << (float)accepted_count / (float)total_proposals << std::endl;
   }
 
   return running_P;
@@ -351,4 +462,40 @@ arma::mat cov_of_Pi_given_P_min_i_sigma(arma::mat &P, arma::mat &Sigma,
       (sigma2 * scalar) * arma::eye<arma::mat>(K_minus_1, K_minus_1);
 
   return cov_i;
+}
+
+//' Mean of P_b given P minus b and Sigma (C++)
+//'
+//' Computes the mean of the conditional distribution of a block of P
+//' given the rest of P, Sigma, and sigma2. This is the C++ version of
+//' \code{cond_Pi_given_P_min_i_sigma}.
+//' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent
+//'   positions
+//' @param Sigma a covariance matrix between the row nodes
+//' @param sigma2 variance parameter indicating the variance between the
+//'   K-1 columns of P
+//' @param indiv_indicees 0-based indices of the rows to compute the conditional
+// for ' @return the conditional mean, a row vector of length \eqn{K-1}
+// [[Rcpp::export]]
+arma::mat block_mean_of_Pi_given_P_min_i_sigma(arma::mat &P, arma::mat &Sigma,
+                                               double sigma2,
+                                               arma::uvec indiv_indices) {
+  int n = P.n_rows;
+
+  // Indices minus_i = setdiff(1:n, i)  (0-based: tous sauf i)
+  arma::uvec minus_i = arma::regspace<arma::uvec>(0, n - 1);
+  minus_i.shed_rows(indiv_indices);
+
+  // Si = Sigma[i, minus_i] %*% solve(Sigma[minus_i, minus_i])
+  arma::mat Sigma_i_minus = Sigma.rows(indiv_indices);
+  Sigma_i_minus.shed_cols(indiv_indices); // Sigma[i, minus_i]
+  arma::mat Sigma_minus_minus = Sigma.submat(minus_i, minus_i);
+  // Resolve the linear system directly instead of computing the explicit
+  // inverse: more stable numerically and closer to R's solve().
+  arma::mat Si_t = arma::solve(Sigma_minus_minus, Sigma_i_minus.t());
+  arma::mat Si = Si_t.t();
+
+  // mean_i = Si %*% P[minus_i, ]
+  arma::mat mean_i = Si * P.rows(minus_i);
+  return mean_i;
 }

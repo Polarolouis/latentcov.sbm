@@ -42,8 +42,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // sample_P_metropolis_trick_cpp
-arma::mat sample_P_metropolis_trick_cpp(arma::mat& P, arma::mat& Z, arma::mat& Sigma, double sigma2, bool minibatch, int niter_metropolis);
-RcppExport SEXP _latentcov_sbm_sample_P_metropolis_trick_cpp(SEXP PSEXP, SEXP ZSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP minibatchSEXP, SEXP niter_metropolisSEXP) {
+arma::mat sample_P_metropolis_trick_cpp(arma::mat& P, arma::mat& Z, arma::mat& Sigma, double sigma2, bool minibatch, int niter_metropolis, double rho);
+RcppExport SEXP _latentcov_sbm_sample_P_metropolis_trick_cpp(SEXP PSEXP, SEXP ZSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP minibatchSEXP, SEXP niter_metropolisSEXP, SEXP rhoSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -53,7 +53,26 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
     Rcpp::traits::input_parameter< bool >::type minibatch(minibatchSEXP);
     Rcpp::traits::input_parameter< int >::type niter_metropolis(niter_metropolisSEXP);
-    rcpp_result_gen = Rcpp::wrap(sample_P_metropolis_trick_cpp(P, Z, Sigma, sigma2, minibatch, niter_metropolis));
+    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    rcpp_result_gen = Rcpp::wrap(sample_P_metropolis_trick_cpp(P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sample_P_metropolis_trick_cpp_block
+arma::mat sample_P_metropolis_trick_cpp_block(arma::mat& P, arma::mat& Z, arma::mat& Sigma, double sigma2, bool minibatch, int niter_metropolis, double rho, int block_size);
+RcppExport SEXP _latentcov_sbm_sample_P_metropolis_trick_cpp_block(SEXP PSEXP, SEXP ZSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP minibatchSEXP, SEXP niter_metropolisSEXP, SEXP rhoSEXP, SEXP block_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Sigma(SigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< bool >::type minibatch(minibatchSEXP);
+    Rcpp::traits::input_parameter< int >::type niter_metropolis(niter_metropolisSEXP);
+    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    Rcpp::traits::input_parameter< int >::type block_size(block_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(sample_P_metropolis_trick_cpp_block(P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho, block_size));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -85,13 +104,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// block_mean_of_Pi_given_P_min_i_sigma
+arma::mat block_mean_of_Pi_given_P_min_i_sigma(arma::mat& P, arma::mat& Sigma, double sigma2, arma::uvec indiv_indices);
+RcppExport SEXP _latentcov_sbm_block_mean_of_Pi_given_P_min_i_sigma(SEXP PSEXP, SEXP SigmaSEXP, SEXP sigma2SEXP, SEXP indiv_indicesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Sigma(SigmaSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type indiv_indices(indiv_indicesSEXP);
+    rcpp_result_gen = Rcpp::wrap(block_mean_of_Pi_given_P_min_i_sigma(P, Sigma, sigma2, indiv_indices));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_latentcov_sbm_pivot_coord_inv", (DL_FUNC) &_latentcov_sbm_pivot_coord_inv, 3},
     {"_latentcov_sbm_sample_P_metropolis_classical_cpp", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_classical_cpp, 7},
-    {"_latentcov_sbm_sample_P_metropolis_trick_cpp", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_trick_cpp, 6},
+    {"_latentcov_sbm_sample_P_metropolis_trick_cpp", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_trick_cpp, 7},
+    {"_latentcov_sbm_sample_P_metropolis_trick_cpp_block", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_trick_cpp_block, 8},
     {"_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma, 4},
     {"_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma, 4},
+    {"_latentcov_sbm_block_mean_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_block_mean_of_Pi_given_P_min_i_sigma, 4},
     {NULL, NULL, 0}
 };
 
