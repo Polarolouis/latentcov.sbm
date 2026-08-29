@@ -64,13 +64,27 @@ row_normalize_matrix <- function(mat, is_log = TRUE, tol = NULL) {
 
 #' Build a covariance matrix from posterior samples
 #'
-#' @param posterior_array A posterior array in the form Iteration x Chain x Parameter.
+#' @param draws A posterior array in the form Iteration x Chain x Parameter.
 #' @param n The number of individuals, the rows of the outputted covariance matrix.
 #' @param K The number of blocks, in the latent continuous space there are K-1 columns.
 #' @return A covariance matrix
 #' @export
-build_covariance_matrix <- function(posterior_array, n, K) {
+build_covariance_matrix <- function(draws, n, K, corr = FALSE) {
   # Function implementation would go here
+  P_draws <- posterior::subset_draws(draws, variable = "P")
+  P_array <- aperm(
+    array(P_draws, dim = c(200, 5, n, K - 1)),
+    c(3, 4, 1, 2)
+  )
+  dimnames(P_array) <- list("P_rows" = seq(1, n), "P_cols" = seq(1, K - 1), "Iteration" = seq_len(posterior::niterations(P_draws)), "Chain" = seq_len(posterior::nchains(P_draws)))
+  P_mean <- apply(P_array, c(1, 2, 4), mean)
+  if (corr) {
+    out <- simplify2array(lapply(seq_len(dim(P_mean)[3]), function(c) cor(t(P_mean[, , c]))))
+  } else {
+    out <- simplify2array(lapply(seq_len(dim(P_mean)[3]), function(c) cov(t(P_mean[, , c]))))
+  }
+
+  return(out)
 }
 
 
@@ -719,7 +733,7 @@ prior_checker <- function(values, prior_qfunction = qgamma, ...) {
   crd_int <- prior_qfunction(c(0.025, 0.975), ...)
   covered <- values >= crd_int[1] & values <= crd_int[2]
   cat("Crd interval : [", crd_int[1], ";", crd_int[2], "]\n")
-  cat("Percentage of values covered = ", (sum(covered) / length(covered)) * 100, "%")
+  cat("Percentage of values covered = ", (sum(covered) / length(covered)) * 100, "%\n")
   return(covered)
 }
 
