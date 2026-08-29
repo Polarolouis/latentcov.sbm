@@ -118,6 +118,45 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rmatrixnormal_cpp
+arma::mat rmatrixnormal_cpp(const arma::mat& M, const arma::mat& U, const arma::mat& V);
+RcppExport SEXP _latentcov_sbm_rmatrixnormal_cpp(SEXP MSEXP, SEXP USEXP, SEXP VSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type U(USEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type V(VSEXP);
+    rcpp_result_gen = Rcpp::wrap(rmatrixnormal_cpp(M, U, V));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dmatrixnormal_cpp
+double dmatrixnormal_cpp(const arma::mat& X, const arma::mat& M, const arma::mat& U, const arma::mat& V, bool log_p);
+RcppExport SEXP _latentcov_sbm_dmatrixnormal_cpp(SEXP XSEXP, SEXP MSEXP, SEXP USEXP, SEXP VSEXP, SEXP log_pSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type U(USEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type V(VSEXP);
+    Rcpp::traits::input_parameter< bool >::type log_p(log_pSEXP);
+    rcpp_result_gen = Rcpp::wrap(dmatrixnormal_cpp(X, M, U, V, log_p));
+    return rcpp_result_gen;
+END_RCPP
+}
+// compute_Uinv
+arma::mat compute_Uinv(const arma::mat& U);
+RcppExport SEXP _latentcov_sbm_compute_Uinv(SEXP USEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type U(USEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_Uinv(U));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_latentcov_sbm_pivot_coord_inv", (DL_FUNC) &_latentcov_sbm_pivot_coord_inv, 3},
@@ -127,6 +166,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_mean_of_Pi_given_P_min_i_sigma, 4},
     {"_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_cov_of_Pi_given_P_min_i_sigma, 4},
     {"_latentcov_sbm_block_mean_of_Pi_given_P_min_i_sigma", (DL_FUNC) &_latentcov_sbm_block_mean_of_Pi_given_P_min_i_sigma, 4},
+    {"_latentcov_sbm_rmatrixnormal_cpp", (DL_FUNC) &_latentcov_sbm_rmatrixnormal_cpp, 3},
+    {"_latentcov_sbm_dmatrixnormal_cpp", (DL_FUNC) &_latentcov_sbm_dmatrixnormal_cpp, 5},
+    {"_latentcov_sbm_compute_Uinv", (DL_FUNC) &_latentcov_sbm_compute_Uinv, 1},
     {NULL, NULL, 0}
 };
 

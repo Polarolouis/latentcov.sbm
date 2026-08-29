@@ -125,3 +125,30 @@ block_mean_of_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, indiv_indices
     .Call(`_latentcov_sbm_block_mean_of_Pi_given_P_min_i_sigma`, P, Sigma, sigma2, indiv_indices)
 }
 
+#' Sample a Matrix Normal with parameters M, U and V
+#'
+#' @param M a matrix of size n,p the mean of the matrix normal
+#' @param U a variance-covariance matrix for the rows of Y
+#' @param V a variance-covariance matrix for the columns of Y
+#'
+#' @returns Y a matrix of size n,p with the above mean and covariances
+rmatrixnormal_cpp <- function(M, U, V) {
+    .Call(`_latentcov_sbm_rmatrixnormal_cpp`, M, U, V)
+}
+
+#' Compute density for X of a Matrix Normal with parameters M, U and V
+#'
+#' @param X a matrix of size n,p for which to compute the density
+#' @param M a matrix of size n,p the mean of the matrix normal
+#' @param U a variance-covariance matrix for the rows of Y
+#' @param V a variance-covariance matrix for the columns of Y
+#'
+#' @returns the density a scalar
+dmatrixnormal_cpp <- function(X, M, U, V, log_p = FALSE) {
+    .Call(`_latentcov_sbm_dmatrixnormal_cpp`, X, M, U, V, log_p)
+}
+
+compute_Uinv <- function(U) {
+    .Call(`_latentcov_sbm_compute_Uinv`, U)
+}
+
