@@ -13,7 +13,9 @@ simulate_P_and_Z <- function(K, Sigma, sigma2) {
 
   probs <- pivotCoordInv(P)
 
-  Z <- sapply(seq_len(nrow(probs)), function(i) seq_len(K)[(rmultinom(n = 1, size = 1, prob = probs[i, ]) == 1)])
+  Z <- sapply(seq_len(nrow(probs)), function(i) {
+    sample.int(n = K, size = 1, replace = TRUE, prob = probs[i, ])
+  })
 
   return(list(Z = Z, P = P, probs = probs))
 }
