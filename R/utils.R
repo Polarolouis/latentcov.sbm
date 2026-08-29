@@ -287,7 +287,7 @@ perm_matrix_from_order <- function(order) {
 #' @seealso [lbm_results_to_stan_draws()], [find_permutation_alphas()]
 #' @export
 #' @importFrom utils head tail
-delabel_switch_stan <- function(draws, K, R, Psi_function = default_Psi_function, find_permutations = find_permutation_alphas_L2) {
+delabel_switch_stan <- function(draws, K, R, alpha_ref = NULL, Psi_function = default_Psi_function, find_permutations = find_permutation_alphas_L2) {
   stopifnot("There must be at least two chains" = dim(draws)[2] > 1)
 
   var_idx_alphas <- which(startsWith(dimnames(draws)[[3]], "alpha"))
@@ -298,10 +298,9 @@ delabel_switch_stan <- function(draws, K, R, Psi_function = default_Psi_function
 
   alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) matrix(mean_alphas_array[row, ], nrow = K, ncol = R))
 
-  alpha_ref <- alpha_matrices[[1]]
-  alpha_matrices <- alpha_matrices[-1]
-
-
+  if (is.null(alpha_ref)) {
+    alpha_ref <- alpha_matrices[[1]]
+  }
   permutations_list <- lapply(alpha_matrices, find_permutations, alpha_ref = alpha_ref)
 
   # Apply permutations to relabel all chains
@@ -309,8 +308,8 @@ delabel_switch_stan <- function(draws, K, R, Psi_function = default_Psi_function
   Psi <- Psi_function(K)
 
   # Process each chain starting from chain 2 (chain 1 is the reference)
-  for (chain_idx in 2:dim(draws)[2]) {
-    perm <- permutations_list[[chain_idx - 1]]
+  for (chain_idx in seq_len(posterior::nchains(draws_delabeled))) {
+    perm <- permutations_list[[chain_idx]]
     row_perm <- perm$row_perm
     col_perm <- perm$col_perm
 
