@@ -9,7 +9,6 @@
 #' @importFrom stats rmultinom
 #' @export
 simulate_P_and_Z <- function(K, Sigma, sigma2) {
-
   # ---- Guard rails ---------------------------------------------------------
 
   if (!is.numeric(K) || length(K) != 1L || is.na(K) || K != round(K) || K < 2L) {
