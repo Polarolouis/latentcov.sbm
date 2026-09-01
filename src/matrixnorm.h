@@ -1,8 +1,8 @@
 #ifndef MATRIXNORM_H
 #define MATRIXNORM_H
-#include "shared.h"
 #include <RcppArmadillo.h>
 #define DEBUG_MATRIXNORM false
+using namespace arma;
 
 inline arma::mat rmatrixnorm(const arma::mat &M, const arma::mat &U,
                              const arma::mat &V) {
