@@ -772,3 +772,16 @@ pivotCoordInv <- function(x, norm = "orthonormal") {
   return(x.back)
   # return(yexp)
 }
+
+.logit <- function(x) {
+  return(1 / (1 + exp(-x)))
+}
+
+stick_breaking <- function(x) {
+  sapply(seq_len(length(x) - 1), function(idx) {
+    if (idx == 1) {
+      return(exp(x[idx]) / sum(exp(x)))
+    }
+    return(.logit(x[idx]) * sum(.logit(x[seq(idx - 1)])))
+  })
+}
