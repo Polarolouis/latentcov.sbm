@@ -4,11 +4,12 @@
 #' @param K number of clusters
 #' @param Sigma covariance matrix
 #' @param sigma2 variance parameter
+#' @param M the mean matrix. Defaults to a null matrix.
 #'
 #' @return A list containing Z, P, and probs
 #' @importFrom stats rmultinom
 #' @export
-simulate_P_and_Z <- function(K, Sigma, sigma2) {
+simulate_P_and_Z <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
   # ---- Guard rails ---------------------------------------------------------
 
   if (!is.numeric(K) || length(K) != 1L || is.na(K) || K != round(K) || K < 2L) {
@@ -89,15 +90,18 @@ simulate_P_and_Z <- function(K, Sigma, sigma2) {
 
   if (min(lambda) >= tol_min) {
     # Positive definite: use the classic (chol based) matrix-normal draw.
-    P <- rmatrixnormal(M = matrix(0, n1, K - 1), U = Sigma, V = sigma2 * diag(1, K - 1))
+    P <- rmatrixnormal(M = M, U = Sigma, V = sigma2 * diag(1, K - 1))
   } else {
     # (Numerically) singular: eigen-based draw, vec(P) ~ N(0, sigma2 * I %x% Sigma).
     A <- e$vectors %*% diag(sqrt(pmax(lambda, 0)), n1, n1) %*% t(e$vectors) # A A^T = Sigma
     X <- matrix(stats::rnorm(n1 * (K - 1)), n1, K - 1)
-    P <- sqrt(sigma2) * (A %*% X)
+    P <- M + sqrt(sigma2) * (A %*% X)
   }
 
-  probs <- pivotCoordInv(P)
+  # probs <- pivotCoordInv(P)
+  contrasts <- P %*% default_Psi_function(K = K)
+  y <- contrasts - apply(contrasts, 1, max)
+  probs <- exp(y) / sum(exp(y))
 
   Z <- sapply(seq_len(nrow(probs)), function(i) {
     sample.int(n = K, size = 1, replace = TRUE, prob = probs[i, ])
