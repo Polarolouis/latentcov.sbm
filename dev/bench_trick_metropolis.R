@@ -12,8 +12,8 @@ library(microbenchmark)
 
 # --- Load both implementations ----------------------------------------------
 # R reference implementation and its helpers
-source(file.path("R", "simulate.R"))
-source(file.path("R", "utils.R"))
+devtools::load_all()
+
 
 # C++ implementation (compiled on the fly)
 Rcpp::sourceCpp(file.path("src", "P_samplers.cpp"), rebuild = TRUE)
@@ -57,7 +57,7 @@ stopifnot(
 
 # --- Benchmark ---------------------------------------------------------------
 bm <- microbenchmark(
-  R   = sample_P_metropolis_trick(
+  R = sample_P_metropolis_trick(
     P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
     minibatch = minibatch, niter_metropolis = niter_metropolis
   ),
