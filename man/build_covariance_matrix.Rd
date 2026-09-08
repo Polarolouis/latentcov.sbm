@@ -4,10 +4,10 @@
 \alias{build_covariance_matrix}
 \title{Build a covariance matrix from posterior samples}
 \usage{
-build_covariance_matrix(posterior_array, n, K)
+build_covariance_matrix(draws, n, K, corr = FALSE)
 }
 \arguments{
-\item{posterior_array}{A posterior array in the form Iteration x Chain x Parameter.}
+\item{draws}{A posterior array in the form Iteration x Chain x Parameter.}
 
 \item{n}{The number of individuals, the rows of the outputted covariance matrix.}
 

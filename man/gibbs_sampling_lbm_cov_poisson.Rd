@@ -12,7 +12,7 @@ gibbs_sampling_lbm_cov_poisson(
   K,
   R,
   niter = 50L,
-  niter_metropolis = 10L,
+  niter_metropolis = 1L,
   priors_hyper_params = list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), a0 = 1, b0 =
     1),
   rho = 1,
@@ -21,7 +21,7 @@ gibbs_sampling_lbm_cov_poisson(
   known_P = NULL,
   known_W = NULL,
   known_Z = NULL,
-  P_sampler = sample_P_metropolis_trick,
+  P_sampler = sample_P_metropolis_trick_cpp,
   minibatch = TRUE,
   tol = TOL,
   verbose = FALSE,

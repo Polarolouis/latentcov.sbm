@@ -20,8 +20,7 @@ gibbs_sampling_lbm_poisson(
   tol = TOL,
   verbose = FALSE,
   prefix = "",
-  force_order = FALSE,
-  to_stan = TRUE
+  force_order = FALSE
 )
 }
 \arguments{
@@ -76,9 +75,6 @@ append before logs. Will not print anything if
 decreasing marginals order(pi\%\emph{\%alpha,decreasing=TRUE) and
 order(alpha \%}\% rho,decreasing=TRUE) to
 alleviate label-switching}
-
-\item{to_stan}{a boolean, indicating if the output should be a
-stan formatted array of draws}
 }
 \value{
 A list with sampled trajectories:

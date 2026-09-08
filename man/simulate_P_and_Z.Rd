@@ -4,7 +4,7 @@
 \alias{simulate_P_and_Z}
 \title{Simulate P and Z matrices}
 \usage{
-simulate_P_and_Z(K, Sigma, sigma2)
+simulate_P_and_Z(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1))
 }
 \arguments{
 \item{K}{number of clusters}
@@ -12,6 +12,8 @@ simulate_P_and_Z(K, Sigma, sigma2)
 \item{Sigma}{covariance matrix}
 
 \item{sigma2}{variance parameter}
+
+\item{M}{the mean matrix. Defaults to a null matrix.}
 }
 \value{
 A list containing Z, P, and probs

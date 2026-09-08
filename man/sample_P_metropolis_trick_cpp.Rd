@@ -10,7 +10,8 @@ sample_P_metropolis_trick_cpp(
   Sigma,
   sigma2,
   minibatch = TRUE,
-  niter_metropolis = 50L
+  niter_metropolis = 50L,
+  rho = 1
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ indicating the membership of row node \eqn{i}, \eqn{Z_{i,k} = 1} if \eqn{i} is i
 \item{minibatch}{a boolean indicating wether to update the rows in the lexical order or to sample at each iteration. Default to TRUE}
 
 \item{niter_metropolis}{an integer specifying the number of metropolis iterations to perform. Defaults to 50.}
+
+\item{rho}{unused double for compatibility only}
 }
 \value{
 an updated matrix of latent positions, of the same size

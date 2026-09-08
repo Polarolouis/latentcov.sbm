@@ -47,8 +47,6 @@ indicating the known columns block memberships}
 decreasing marginals order(pi\%\emph{\%alpha,decreasing=TRUE) and
 order(alpha \%}\% rho,decreasing=TRUE) to
 alleviate label-switching}
-    \item{\code{to_stan}}{a boolean, indicating if the output should be a
-stan formatted array of draws}
     \item{\code{rho}}{a double indicating the variance of the gaussian proposal distribution.}
   }}
 }

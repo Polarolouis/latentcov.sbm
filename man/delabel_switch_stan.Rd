@@ -9,6 +9,7 @@ delabel_switch_stan(
   draws,
   K,
   R,
+  alpha_ref = NULL,
   Psi_function = default_Psi_function,
   find_permutations = find_permutation_alphas_L2
 )
