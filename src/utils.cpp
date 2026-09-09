@@ -31,6 +31,20 @@ double dmatrixnormal_cpp(const arma::mat &X, const arma::mat &M,
 // [[Rcpp::export]]
 arma::mat compute_Uinv(const arma::mat &U) { return inv_sympd(U); }
 
+// [[Rcpp::export]]
+arma::mat default_Psi_function_cpp(int K) {
+  arma::mat Psi(K - 1, K, arma::fill::zeros);
+  for (int j = 0; j < K - 1; ++j) {
+    double coef =
+        std::sqrt(static_cast<double>(K - j - 1) / static_cast<double>(K - j));
+    for (int c = j + 1; c < K; ++c) {
+      Psi(j, c) = coef / static_cast<double>(K - j - 1);
+    }
+    Psi(j, j) = -coef;
+  }
+  return Psi;
+}
+
 //' Inverse pivot coordinate transformation (C++)
 //'
 //' Performs the inverse pivot coordinate transformation for the latent
@@ -38,61 +52,23 @@ arma::mat compute_Uinv(const arma::mat &U) { return inv_sympd(U); }
 //' coordinates of a row back to the \eqn{K}-simplex of membership
 //' probabilities.
 //' @param x Input matrix (\eqn{n \times K-1}) of latent coordinates
-//' @param norm Normalization type ("orthogonal" or "orthonormal")
+//' @param basis The basis to use
 //' @param log if \code{TRUE}, the log-probabilities are returned
 //' @return A matrix (\eqn{n \times K}) of (log) simplex probabilities
 //'
 //' @export
 // [[Rcpp::export]]
-arma::mat pivot_coord_inv(arma::mat &x, std::string norm = "orthonormal",
-                          bool log = false) {
-  // Mirror precisely the R implementation: x <- -x and then operate on that
-  arma::mat xneg = -x;
-  arma::mat xback;
-  arma::mat y(x.n_rows, x.n_cols + 1, arma::fill::zeros);
-  int D = x.n_cols + 1;
-  double first_fill = 1.0;
+arma::mat ilrInv_cpp(const arma::mat &z, arma::mat basis, bool log = true) {
+  arma::mat clr = z * basis;
 
-  if (norm != "orthogonal" && norm != "orthonormal") {
-    Rcpp::stop("Norm %s not implemented !", norm);
-  }
+  arma::vec max_clr = arma::max(clr, 1);
+  arma::mat xexp = arma::exp(clr - arma::repmat(max_clr, 1, clr.n_cols));
 
-  if (norm == "orthonormal") {
-    first_fill = -std::sqrt((double)(D - 1) / (double)D);
-  } else if (norm == "orthogonal") {
-    first_fill = 1.0;
-  }
-
-  y.col(0) = first_fill * xneg.col(0);
-
-  for (int i = 1; i < (int)y.n_cols; ++i) {
-    for (int j = 0; j < i; ++j) {
-      unsigned int ull_i = static_cast<unsigned int>(i);
-      unsigned int ull_j = static_cast<unsigned int>(j);
-      double denom = 1.0;
-      if (norm == "orthonormal") {
-        denom = std::sqrt((double)(D - ull_j) * (double)(D - ull_j - 1.0));
-      }
-      y.col(ull_i) += xneg.col(ull_j) / denom;
-    }
-  }
-
-  for (int i = 1; i < (int)y.n_cols - 1; ++i) {
-    unsigned int ull_i = static_cast<unsigned int>(i);
-    double multip = 1.0;
-    if (norm == "orthonormal") {
-      multip = std::sqrt((double)(D - i - 1) / (double)(D - i));
-    }
-    y.col(ull_i) -= xneg.col(ull_i) * multip;
-  }
-
-  arma::vec max_rows = arma::max(y, 1);
-  arma::mat yexp = arma::exp(y - arma::repmat(max_rows, 1, y.n_cols));
-  xback = yexp / arma::repmat(arma::sum(yexp, 1), 1, y.n_cols);
+  arma::mat x = xexp / arma::repmat(arma::sum(xexp, 1), 1, xexp.n_cols);
 
   if (log) {
-    xback = arma::log(xback);
+    x = arma::log(x);
   }
 
-  return xback;
+  return x;
 }

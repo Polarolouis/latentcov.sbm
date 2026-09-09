@@ -10,6 +10,6 @@ arma::mat rmatrixnormal_cpp(const arma::mat &M, const arma::mat &U,
 double dmatrixnormal_cpp(const arma::mat &X, const arma::mat &M,
                          const arma::mat &U, const arma::mat &V, bool log_p);
 
-arma::mat pivot_coord_inv(arma::mat &x, std::string norm, bool log);
+arma::mat ilrInv(const arma::mat &z, arma::mat &basis, bool log);
 
 #endif // UTILS_H

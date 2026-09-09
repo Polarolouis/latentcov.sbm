@@ -144,16 +144,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// pivot_coord_inv
-arma::mat pivot_coord_inv(arma::mat& x, std::string norm, bool log);
-RcppExport SEXP _latentcov_sbm_pivot_coord_inv(SEXP xSEXP, SEXP normSEXP, SEXP logSEXP) {
+// default_Psi_function_cpp
+arma::mat default_Psi_function_cpp(int K);
+RcppExport SEXP _latentcov_sbm_default_Psi_function_cpp(SEXP KSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< std::string >::type norm(normSEXP);
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    rcpp_result_gen = Rcpp::wrap(default_Psi_function_cpp(K));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ilrInv_cpp
+arma::mat ilrInv_cpp(const arma::mat& z, arma::mat basis, bool log);
+RcppExport SEXP _latentcov_sbm_ilrInv_cpp(SEXP zSEXP, SEXP basisSEXP, SEXP logSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type z(zSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type basis(basisSEXP);
     Rcpp::traits::input_parameter< bool >::type log(logSEXP);
-    rcpp_result_gen = Rcpp::wrap(pivot_coord_inv(x, norm, log));
+    rcpp_result_gen = Rcpp::wrap(ilrInv_cpp(z, basis, log));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -168,7 +179,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latentcov_sbm_rmatrixnormal_cpp", (DL_FUNC) &_latentcov_sbm_rmatrixnormal_cpp, 3},
     {"_latentcov_sbm_dmatrixnormal_cpp", (DL_FUNC) &_latentcov_sbm_dmatrixnormal_cpp, 5},
     {"_latentcov_sbm_compute_Uinv", (DL_FUNC) &_latentcov_sbm_compute_Uinv, 1},
-    {"_latentcov_sbm_pivot_coord_inv", (DL_FUNC) &_latentcov_sbm_pivot_coord_inv, 3},
+    {"_latentcov_sbm_default_Psi_function_cpp", (DL_FUNC) &_latentcov_sbm_default_Psi_function_cpp, 1},
+    {"_latentcov_sbm_ilrInv_cpp", (DL_FUNC) &_latentcov_sbm_ilrInv_cpp, 3},
     {NULL, NULL, 0}
 };
 

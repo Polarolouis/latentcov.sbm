@@ -136,6 +136,10 @@ compute_Uinv <- function(U) {
     .Call(`_latentcov_sbm_compute_Uinv`, U)
 }
 
+default_Psi_function_cpp <- function(K) {
+    .Call(`_latentcov_sbm_default_Psi_function_cpp`, K)
+}
+
 #' Inverse pivot coordinate transformation (C++)
 #'
 #' Performs the inverse pivot coordinate transformation for the latent
@@ -143,12 +147,12 @@ compute_Uinv <- function(U) {
 #' coordinates of a row back to the \eqn{K}-simplex of membership
 #' probabilities.
 #' @param x Input matrix (\eqn{n \times K-1}) of latent coordinates
-#' @param norm Normalization type ("orthogonal" or "orthonormal")
+#' @param basis The basis to use
 #' @param log if \code{TRUE}, the log-probabilities are returned
 #' @return A matrix (\eqn{n \times K}) of (log) simplex probabilities
 #'
 #' @export
-pivot_coord_inv <- function(x, norm = "orthonormal", log = FALSE) {
-    .Call(`_latentcov_sbm_pivot_coord_inv`, x, norm, log)
+ilrInv_cpp <- function(z, basis = default_Psi_function_cpp(ncol(z) + 1L), log = TRUE) {
+    .Call(`_latentcov_sbm_ilrInv_cpp`, z, basis, log)
 }
 
