@@ -750,27 +750,22 @@ mse <- function(x, y) sum((x - y)^2)
 #'
 #' Performs the inverse pivot coordinate transformation for the latent covariance stochastic block model
 #' @param x Input matrix
-#' @param norm Normalization type ("orthogonal" or "orthonormal")
+#' @param basis The basis to use
 #' @return Transformed matrix
-pivotCoordInv <- function(x, norm = "orthonormal") {
-  if (!(norm %in% c("orthogonal", "orthonormal"))) stop("only orthogonal and orthonormal is allowd for norm")
-  x <- -x
-  y <- matrix(0, nrow = nrow(x), ncol = ncol(x) + 1)
-  D <- ncol(x) + 1
-  if (norm == "orthonormal") y[, 1] <- -sqrt((D - 1) / D) * x[, 1] else y[, 1] <- x[, 1]
-  for (i in 2:ncol(y)) {
-    for (j in 1:(i - 1)) {
-      y[, i] <- y[, i] + x[, j] / if (norm == "orthonormal") sqrt((D - j + 1) * (D - j)) else 1
-    }
-  }
-  for (i in 2:(ncol(y) - 1)) {
-    y[, i] <- y[, i] - x[, i] * if (norm == "orthonormal") sqrt((D - i) / (D - i + 1)) else 1
-  }
-  yexp <- exp(y - apply(y, 1, max))
-  x.back <- yexp / apply(yexp, 1, sum) # * rowSums(derOriginaldaten)
-  if (is.data.frame(x)) x.back <- data.frame(x.back)
-  return(x.back)
-  # return(yexp)
+ilrInv <- function(z, basis = default_Psi_function(ncol(z) + 1)) {
+  clr <- z %*% basis
+  e <- exp(clr - apply(clr, 1, max))
+  e / rowSums(e)
+}
+
+ilr <- function(x, basis = default_Psi_function(ncol(x))) {
+  clr(x) %*% t(basis)
+}
+
+clr <- function(x) {
+  lx <- log(x)
+  lx_bar <- apply(lx, 1, mean)
+  return(lx - lx_bar)
 }
 
 .logit <- function(x) {
