@@ -98,7 +98,7 @@ simulate_P_and_Z <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)
     P <- M + sqrt(sigma2) * (A %*% X)
   }
 
-  # probs <- pivotCoordInv(P)
+  # probs <- ilrInv(P)
   contrasts <- P %*% default_Psi_function(K = K)
   y <- contrasts - apply(contrasts, 1, max)
   probs <- exp(y) / sum(exp(y))
@@ -201,8 +201,8 @@ simulate_P <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
   return(P)
 }
 
-simulate_Z_from_P <- function(P, transformation = pivot_coord_inv) {
-  probs <- pivot_coord_inv(P)
+simulate_Z_from_P <- function(P, transformation = ilrInvcpp) {
+  probs <- ilrInvcpp(P)
   K <- ncol(probs)
   Z <- sapply(seq_len(nrow(probs)), function(i) {
     factor(sample.int(n = K, size = 1, replace = TRUE, prob = probs[i, ]), levels = seq(K))

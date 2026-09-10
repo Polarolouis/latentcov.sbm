@@ -67,6 +67,8 @@ row_normalize_matrix <- function(mat, is_log = TRUE, tol = NULL) {
 #' @param draws A posterior array in the form Iteration x Chain x Parameter.
 #' @param n The number of individuals, the rows of the outputted covariance matrix.
 #' @param K The number of blocks, in the latent continuous space there are K-1 columns.
+#'
+#' @importFrom stats cor cov
 #' @return A covariance matrix
 #' @export
 build_covariance_matrix <- function(draws, n, K, corr = FALSE) {
@@ -728,6 +730,7 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
 #' @param prior_qfunction the prior's quantile function to obtain the bounds
 #' @param ... the parameters to provide to the quantile function
 #'
+#' @importFrom stats qgamma
 #' @return a boolean vector of the size values indicating if the values are in the 95% credibility interval
 prior_checker <- function(values, prior_qfunction = qgamma, ...) {
   crd_int <- prior_qfunction(c(0.025, 0.975), ...)

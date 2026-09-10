@@ -1,5 +1,6 @@
 #include "P_samplers.h"
 #include "mvnorm.h"
+#include "utils.h"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -40,6 +41,8 @@ arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
   Rcpp::RNGScope scope;
   mat running_P = P;
   int n = running_P.n_rows;
+  int K = running_P.n_cols + 1;
+  arma::mat basis = default_Psi_function_cpp(K);
 
   arma::rowvec rho_values = {1.0, 0.1, 10};
 
@@ -84,9 +87,8 @@ arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
       arma::mat ind_cov =
           cov_of_Pi_given_P_min_i_sigma(running_P, Sigma, sigma2, indiv_idx);
 
-      double log_accept =
-          pivot_coord_inv(Pi_candidate, "orthonormal", true)(Zi) -
-          pivot_coord_inv(Pi_old, "orthonormal", true)(Zi);
+      double log_accept = ilrInv_cpp(Pi_candidate, basis, true)(Zi) -
+                          ilrInv_cpp(Pi_old, basis, true)(Zi);
 
       if (DEBUG_SAMPLE) {
         Rcpp::Rcout << "(multinom) accept_prob = " << exp(log_accept)
@@ -148,6 +150,8 @@ arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
   (void)rho;
   mat running_P = P;
   int n = running_P.n_rows;
+  int K = running_P.n_cols + 1;
+  arma::mat basis = default_Psi_function_cpp(K);
 
   arma::uvec row_order;
 
@@ -181,9 +185,8 @@ arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
       arma::uvec Zi_vec = find(Z.row(indiv_idx) == 1, 1, "first");
       uint Zi = Zi_vec(0);
 
-      double log_accept =
-          pivot_coord_inv(Pi_candidate, "orthonormal", true)(Zi) -
-          pivot_coord_inv(Pi_old, "orthonormal", true)(Zi);
+      double log_accept = ilrInv_cpp(Pi_candidate, basis, true)(Zi) -
+                          ilrInv_cpp(Pi_old, basis, true)(Zi);
 
       if (DEBUG_SAMPLE) {
         Rcpp::Rcout << "(multinom) accept_prob = " << exp(log_accept)
@@ -213,12 +216,14 @@ arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
   return running_P;
 };
 
+//' A Metropolis-Hastings sampler for P with the clever proposition and block
+//' update (C++)
 //' @inheritParams sample_P_metropolis_trick
 //' @param block_size the size of blocks to update simultaneously (default: 1
-// for individual updates) ' @return an updated matrix of latent positions, of
-// the same size ' as \code{P} ' @seealso [sample_P_metropolis_classical()], '
-//[sample_P_metropolis_classical_cpp()], ' [sample_P_metropolis_trick()] '
-//@export
+//' for individual updates) ' @return an updated matrix of latent positions, of
+//' the same size ' as \code{P} ' @seealso [sample_P_metropolis_classical()], '
+//' [sample_P_metropolis_classical_cpp()], ' [sample_P_metropolis_trick()] '
+//' @export
 // [[Rcpp::export]]
 arma::mat sample_P_metropolis_trick_cpp_block(arma::mat &P, arma::mat &Z,
                                               arma::mat &Sigma, double sigma2,
@@ -230,6 +235,8 @@ arma::mat sample_P_metropolis_trick_cpp_block(arma::mat &P, arma::mat &Z,
   (void)rho;
   mat running_P = P;
   int n = running_P.n_rows;
+  int K = running_P.n_cols + 1;
+  arma::mat basis = default_Psi_function_cpp(K);
 
   arma::uvec row_order;
 
@@ -292,9 +299,8 @@ arma::mat sample_P_metropolis_trick_cpp_block(arma::mat &P, arma::mat &Z,
         arma::uvec Zi_vec = find(Z.row(indiv_idx) == 1, 1, "first");
         uint Zi = Zi_vec(0);
 
-        double log_accept_single =
-            pivot_coord_inv(Pi_candidate, "orthonormal", true)(Zi) -
-            pivot_coord_inv(Pi_old, "orthonormal", true)(Zi);
+        double log_accept_single = ilrInv_cpp(Pi_candidate, basis, true)(Zi) -
+                                   ilrInv_cpp(Pi_old, basis, true)(Zi);
 
         log_accept_total += log_accept_single;
       }

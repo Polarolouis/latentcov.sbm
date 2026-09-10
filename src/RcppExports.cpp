@@ -156,13 +156,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // ilrInv_cpp
-arma::mat ilrInv_cpp(const arma::mat& z, arma::mat basis, bool log);
+arma::mat ilrInv_cpp(const arma::mat& z, const arma::mat& basis, bool log);
 RcppExport SEXP _latentcov_sbm_ilrInv_cpp(SEXP zSEXP, SEXP basisSEXP, SEXP logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type basis(basisSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type basis(basisSEXP);
     Rcpp::traits::input_parameter< bool >::type log(logSEXP);
     rcpp_result_gen = Rcpp::wrap(ilrInv_cpp(z, basis, log));
     return rcpp_result_gen;

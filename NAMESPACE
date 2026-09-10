@@ -8,18 +8,22 @@ export(delabel_switch_stan)
 export(entropy)
 export(gibbs_sampling_lbm_cov_poisson)
 export(gibbs_sampling_lbm_poisson)
+export(ilrInv_cpp)
 export(mutual_information)
-export(pivot_coord_inv)
 export(row_normalize_matrix)
 export(sample_P_metropolis_classical)
 export(sample_P_metropolis_classical_cpp)
 export(sample_P_metropolis_trick)
 export(sample_P_metropolis_trick_cpp)
+export(sample_P_metropolis_trick_cpp_block)
 export(simulate_P_and_Z)
 importFrom(MCMCpack,rdirichlet)
 importFrom(Rcpp,sourceCpp)
 importFrom(stats,
+  cor,
+  cov,
   dist,
+  qgamma,
   rgamma,
   rmultinom,
   rnorm,

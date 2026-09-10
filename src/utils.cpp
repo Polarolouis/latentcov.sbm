@@ -58,7 +58,8 @@ arma::mat default_Psi_function_cpp(int K) {
 //'
 //' @export
 // [[Rcpp::export]]
-arma::mat ilrInv_cpp(const arma::mat &z, arma::mat basis, bool log = true) {
+arma::mat ilrInv_cpp(const arma::mat &z, const arma::mat &basis,
+                     bool log = false) {
   arma::mat clr = z * basis;
 
   arma::vec max_clr = arma::max(clr, 1);

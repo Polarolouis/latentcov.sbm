@@ -75,7 +75,7 @@ sample_Pi_given <- function(P, Sigma, sigma2, i) {
 #' @param Pi latent position
 #' @return probability of the categorical distribution
 cat_dist_ilr_given_Pi <- function(Zi, Pi) {
-  probs <- pivotCoordInv(matrix(Pi, nrow = 1))
+  probs <- ilrInv(matrix(Pi, nrow = 1))
   return(probs[Zi])
 }
 
@@ -226,7 +226,7 @@ sample_rho_given_W <- function(gammas_post) {
 param_multinom_probs_Z_cov_poisson <- function(Y, alpha, W, P, tol = TOL) {
   R_W <- Y %*% W
   N_W <- diag(colSums(W))
-  unormalized_log_probs <- log(pivotCoordInv(P)) + R_W %*% log(t(alpha)) - matrix(1, nrow = nrow(Y), ncol = ncol(W)) %*% N_W %*% t(alpha)
+  unormalized_log_probs <- log(ilrInv(P)) + R_W %*% log(t(alpha)) - matrix(1, nrow = nrow(Y), ncol = ncol(W)) %*% N_W %*% t(alpha)
 
   return(row_normalize_matrix(unormalized_log_probs, tol = tol))
 }

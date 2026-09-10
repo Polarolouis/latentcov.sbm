@@ -88,7 +88,8 @@ arma::mat cov_of_Pi_given_P_min_i_sigma(arma::mat &P, arma::mat &Sigma,
 //' @param sigma2 variance parameter indicating the variance between the
 //'   K-1 columns of P
 //' @param indiv_indicees 0-based indices of the rows to compute the conditional
-// for ' @return the conditional mean, a row vector of length \eqn{K-1}
+//' for
+//' @return the conditional mean, a row vector of length \eqn{K-1}
 // [[Rcpp::export]]
 arma::mat block_mean_of_Pi_given_P_min_i_sigma(arma::mat &P, arma::mat &Sigma,
                                                double sigma2,
