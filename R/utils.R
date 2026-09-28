@@ -701,6 +701,100 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
   cli::cli_alert_success("This configuration is identifiable in the sense of Keribin et al. !")
 }
 
+#' A function to compute a posteriori the pi_i probabilities
+#'
+#' @param draws A Stan draw object containing all the P[i,k] latent position
+#' @param transformation The transformation to compute the pi_i from P[i,.].
+#' Defaults to ilrInv
+#'
+#' @return The draws object with the pi[i,k] variables added.
+compute_pi_from_P <- function(draws, transformation = ilrInv) {
+  P_draws <- posterior::subset_draws(
+    draws,
+    variable = "P"
+  )
+
+  P_draws_chain_list <- lapply(seq_len(posterior::nchains(P_draws)), function(chain_idx) posterior::subset_draws(P_draws, chain = chain_idx))
+
+  P_df <- posterior::as_draws_df(P_draws)
+
+  P_names <- grep("^P\\[", names(P_df), value = TRUE)
+
+  # Extraire i et k
+  idx <- do.call(
+    rbind,
+    regmatches(
+      P_names,
+      regexec("^P\\[([0-9]+),([0-9]+)\\]$", P_names)
+    )
+  )
+
+  i_vals <- as.integer(idx[, 2])
+  k_vals <- as.integer(idx[, 3])
+
+  I <- max(i_vals)
+
+  list_of_pi_draws_per_chain <- lapply(seq_len(posterior::nchains(P_draws)), function(chain_idx) {
+    current_P_chain <- P_draws_chain_list[[chain_idx]]
+    posterior::as_draws_array(do.call("cbind", lapply(seq_len(I), function(i) {
+      cols <- P_names[i_vals == i]
+      cols <- cols[order(k_vals[i_vals == i])]
+
+      pi_i_chain_matrix <- current_P_chain[, , cols] |>
+        matrix(ncol = K - 1) |>
+        ilrInv()
+
+      colnames(pi_i_chain_matrix) <- paste0("pi[", i, ",", seq_len(ncol(pi_i_chain_matrix)), "]")
+
+      return(pi_i_chain_matrix)
+    })))
+  })
+
+  pi_draws <- posterior::bind_draws(list_of_pi_draws_per_chain, along = "chain")
+  return(posterior::bind_draws(draws, pi_draws, along = "variable"))
+}
+
+compute_meanpi_from_pi_i <- function(draws) {
+  pi_draws <- posterior::subset_draws(draws, variable = "pi")
+
+  pi_draws_chain_list <- lapply(seq_len(posterior::nchains(pi_draws)), function(chain_idx) posterior::subset_draws(pi_draws, chain = chain_idx))
+
+  pi_df <- posterior::as_draws_df(pi_draws)
+
+  pi_names <- grep("^pi\\[", names(pi_df), value = TRUE)
+
+  # Extraire i et k
+  idx <- do.call(
+    rbind,
+    regmatches(
+      pi_names,
+      regexec("^pi\\[([0-9]+),([0-9]+)\\]$", pi_names)
+    )
+  )
+
+  i_vals <- as.integer(idx[, 2])
+  k_vals <- as.integer(idx[, 3])
+  K <- max(k_vals)
+
+  list_of_meanpi_draws_per_chain <- lapply(seq_len(posterior::nchains(pi_draws)), function(chain_idx) {
+    current_pi_chain <- pi_draws_chain_list[[chain_idx]]
+    current_meanpi_draws_matrix <- sapply(seq_len(K), function(k) {
+      cols <- pi_names[k_vals == k]
+
+      mean_pi_k <- current_pi_chain[, , cols] |>
+        as_draws_matrix() |>
+        apply(1, mean)
+    })
+    colnames(current_meanpi_draws_matrix) <- paste0("meanpi[", seq(K), "]")
+    posterior::as_draws_array(current_meanpi_draws_matrix)
+  })
+
+
+  meanpi_draws <- posterior::bind_draws(list_of_meanpi_draws_per_chain, along = "chain")
+  return(posterior::bind_draws(draws, meanpi_draws, along = "variable"))
+}
+
+
 #' One-hot encode a vector of labels (internal)
 #'
 #' @param x A vector of group labels (integers from 1 to `Q`).
