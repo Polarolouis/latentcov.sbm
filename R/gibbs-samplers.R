@@ -275,7 +275,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
   prefix = ""
 ) {
   # Forcing future exports
-  invisible(c(pivotCoordInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
+  invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
   # Initialize the whole arrays of variables
   sigma2_array <- array(NA, dim = c(niter, 1), dimnames = list("Iteration" = seq(niter), "Parameter" = "sigma2"))
 
