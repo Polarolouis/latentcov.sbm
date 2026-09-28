@@ -343,10 +343,10 @@ delabel_switch_stan <- function(draws, K, R, alpha_ref = NULL, Psi_function = de
     rho_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "rho"))
     draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][, , col_perm, drop = FALSE]
 
-    ##  pi (if they exists)
-    pi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "pi"))
-    if (length(pi_idx) > 0) {
-      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][, , row_perm, drop = FALSE]
+    ##  meanpi (if they exists)
+    meanpi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "meanpi"))
+    if (length(meanpi_idx) > 0) {
+      draws_delabeled[, chain_idx, meanpi_idx] <- draws[, chain_idx, meanpi_idx][, , row_perm, drop = FALSE]
     }
 
     ## P
