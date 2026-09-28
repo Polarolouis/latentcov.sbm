@@ -67,6 +67,11 @@ gibbs_sampling_lbm_poisson <- function(
 ) {
   # Forcing future exports
   invisible(c(TOL))
+
+  prov_Y <- Y
+  mask <- (!is.na(Y)) * 1L
+  Y <- replace(Y, is.na(Y), 0)
+
   # Initialize the whole arrays of variables
   rho_array <- array(NA, dim = c(niter, R), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("rho.", seq(1, R))))
 
@@ -147,7 +152,7 @@ gibbs_sampling_lbm_poisson <- function(
 
     ### alpha | Y, Z, W
     if (is.null(known_alpha)) {
-      alpha_params <- param_alpha_given_Y_Z_W_poisson(a0 = a0, b0 = b0, Y = Y, Z = Z, W = W)
+      alpha_params <- param_alpha_given_Y_Z_W_poisson(a0 = a0, b0 = b0, Y = Y, Z = Z, W = W, mask = mask)
       current_alpha <- sample_alpha_given_Y_Z_W_poisson(shape = alpha_params[["shape"]], rate = alpha_params[["rate"]])
     } else {
       current_alpha <- known_alpha
@@ -158,7 +163,7 @@ gibbs_sampling_lbm_poisson <- function(
 
     ### W | Z,Y,rho,alpha
     if (is.null(known_W)) {
-      W_post_probs <- param_multinom_probs_W_poisson(Y, current_alpha, Z, rho = current_rho, tol = tol)
+      W_post_probs <- param_multinom_probs_W_poisson(Y, current_alpha, Z, rho = current_rho, mask = mask, tol = tol)
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
       current_W_memb <- known_W
@@ -170,7 +175,7 @@ gibbs_sampling_lbm_poisson <- function(
 
     ### Z | pi,W,Y,alpha
     if (is.null(known_Z)) {
-      Z_post_probs <- param_multinom_probs_Z_poisson(Y = Y, alpha = current_alpha, W = W, pi = current_pi, tol = tol)
+      Z_post_probs <- param_multinom_probs_Z_poisson(Y = Y, alpha = current_alpha, W = W, pi = current_pi, mask = mask, tol = tol)
       current_Z_memb <- sample_Z_given_alpha_P_Y_W(probs = Z_post_probs)
     } else {
       current_Z_memb <- known_Z
@@ -276,6 +281,11 @@ gibbs_sampling_lbm_cov_poisson <- function(
 ) {
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
+
+  prov_Y <- Y
+  mask <- (!is.na(Y)) * 1L
+  Y <- replace(Y, is.na(Y), 0)
+
   # Initialize the whole arrays of variables
   sigma2_array <- array(NA, dim = c(niter, 1), dimnames = list("Iteration" = seq(niter), "Parameter" = "sigma2"))
 
@@ -352,7 +362,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### alpha | Y, Z, W
     if (is.null(known_alpha)) {
-      alpha_params <- param_alpha_given_Y_Z_W_poisson(a0 = a0, b0 = b0, Y = Y, Z = Z, W = W)
+      alpha_params <- param_alpha_given_Y_Z_W_poisson(a0 = a0, b0 = b0, Y = Y, Z = Z, W = W, mask = mask)
       current_alpha <- sample_alpha_given_Y_Z_W_poisson(shape = alpha_params[["shape"]], rate = alpha_params[["rate"]])
     } else {
       current_alpha <- known_alpha
@@ -383,7 +393,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### W | Z,Y,rho,alpha
     if (is.null(known_W)) {
-      W_post_probs <- param_multinom_probs_W_poisson(Y, current_alpha, Z, rho = current_rho, tol = tol)
+      W_post_probs <- param_multinom_probs_W_poisson(Y, current_alpha, Z, rho = current_rho, mask = mask, tol = tol)
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
       current_W_memb <- known_W
@@ -395,7 +405,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### Z | P,W,Y,alpha
     if (is.null(known_Z)) {
-      Z_post_probs <- param_multinom_probs_Z_cov_poisson(Y = Y, alpha = current_alpha, W = W, P = current_P, tol = tol)
+      Z_post_probs <- param_multinom_probs_Z_cov_poisson(Y = Y, alpha = current_alpha, W = W, P = current_P, mask = mask, tol = tol)
       current_Z_memb <- sample_Z_given_alpha_P_Y_W(probs = Z_post_probs)
     } else {
       current_Z_memb <- known_Z
