@@ -762,6 +762,10 @@ ilrInv <- function(z, basis = default_Psi_function(ncol(z) + 1)) {
 }
 
 ilr <- function(x, basis = default_Psi_function(ncol(x))) {
+  if (is.vector(x)) {
+    cli::cli_warn("{.arg x} is a vector, casting it to a one row matrix.")
+    x <- matrix(x, nrow = 1)
+  }
   clr(x) %*% t(basis)
 }
 
