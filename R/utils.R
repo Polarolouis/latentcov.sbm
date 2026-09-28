@@ -304,7 +304,7 @@ perm_matrix_from_order <- function(order) {
 #' @export
 #' @importFrom utils head tail
 delabel_switch_stan <- function(draws, K, R, alpha_ref = NULL, Psi_function = default_Psi_function, find_permutations = find_permutation_alphas_L2) {
-  stopifnot("There must be at least two chains" = dim(draws)[2] > 1)
+  stopifnot("There must be at least two chains or an alpha_ref" = (dim(draws)[2] > 1 || !is.null(alpha_ref)))
 
   var_idx_alphas <- which(startsWith(dimnames(draws)[[3]], "alpha"))
   start_alpha_var <- head(var_idx_alphas, 1)
