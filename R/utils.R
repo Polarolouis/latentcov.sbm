@@ -881,3 +881,11 @@ stick_breaking <- function(x) {
     return(.logit(x[idx]) * sum(.logit(x[seq(idx - 1)])))
   })
 }
+
+mask_NA <- function(Y, replace_value = 0) {
+  mask <- (!is.na(Y)) * 1L
+  YnoNA <- Y
+  YnoNA[which(mask == 0)] <- replace_value
+
+  return(list(YnoNA = YnoNA, mask = mask))
+}
