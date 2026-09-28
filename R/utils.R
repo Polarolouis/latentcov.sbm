@@ -703,11 +703,11 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
 
 #' A function to compute a posteriori the pi_i probabilities
 #'
-#' @param draws A Stan draw object containing all the P[i,k] latent position
-#' @param transformation The transformation to compute the pi_i from P[i,.].
+#' @param draws A Stan draw object containing all the \code{P[i,k]} latent position
+#' @param transformation The transformation to compute the pi_i from \code{P[i,.]}.
 #' Defaults to ilrInv
 #'
-#' @return The draws object with the pi[i,k] variables added.
+#' @return The draws object with the \code{pi[i,k]} variables added.
 compute_pi_from_P <- function(draws, transformation = ilrInv) {
   P_draws <- posterior::subset_draws(
     draws,
