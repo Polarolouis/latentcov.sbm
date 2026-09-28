@@ -148,6 +148,7 @@ sample_pi_given_Z <- function(etas_post) {
 #' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
 #' indicating the membership of column node \eqn{j}
 #' @param pi a vector of size K containing the row block proportions
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
 #' @param tol Numeric; a small number used to clamp probabilities to
 #' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
 #'
@@ -220,6 +221,7 @@ sample_rho_given_W <- function(gammas_post) {
 #' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
 #' indicating the membership of column node \eqn{j}
 #' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent positions
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
 #' @param tol Numeric; a small number used to clamp probabilities to
 #' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
 #'
@@ -260,6 +262,7 @@ sample_Z_given_alpha_P_Y_W <- function(probs) {
 #' @param Z a matrix of size \eqn{n_1 \times K} with a single 1 per line
 #' indicating the membership of row node \eqn{i}
 #' @param rho a vector of size R containing the column block proportions
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
 #' @param tol Numeric; a small number used to clamp probabilities to
 #' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
 #'
@@ -302,6 +305,7 @@ sample_W_given_alpha_rho_Y_Z <- function(probs) {
 #' indicating the membership of row node \eqn{i}
 #' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
 #' indicating the membership of column node \eqn{j}
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
 #'
 #' @return a list with `shape` and `rate` matrices (\eqn{K \times R}) of the posterior Gamma parameters
 param_alpha_given_Y_Z_W_poisson <- function(a0, b0, Y, Z, W, mask) {

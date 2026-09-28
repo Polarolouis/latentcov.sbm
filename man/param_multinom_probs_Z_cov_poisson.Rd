@@ -4,7 +4,7 @@
 \alias{param_multinom_probs_Z_cov_poisson}
 \title{Compute multinomial probabilities of Z in the latent covariance Poisson LBM}
 \usage{
-param_multinom_probs_Z_cov_poisson(Y, alpha, W, P, tol = TOL)
+param_multinom_probs_Z_cov_poisson(Y, alpha, W, P, mask, tol = TOL)
 }
 \arguments{
 \item{Y}{Non-negative integer matrix of observed counts.}
@@ -15,6 +15,8 @@ param_multinom_probs_Z_cov_poisson(Y, alpha, W, P, tol = TOL)
 indicating the membership of column node \eqn{j}}
 
 \item{P}{a matrix of size \eqn{n_1 \times K-1} specifying latent positions}
+
+\item{mask}{a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.}
 
 \item{tol}{Numeric; a small number used to clamp probabilities to
 \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance}

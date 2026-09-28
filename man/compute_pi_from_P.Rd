@@ -7,13 +7,13 @@
 compute_pi_from_P(draws, transformation = ilrInv)
 }
 \arguments{
-\item{draws}{A Stan draw object containing all the P\link{i,k} latent position}
+\item{draws}{A Stan draw object containing all the \code{P[i,k]} latent position}
 
-\item{transformation}{The transformation to compute the pi_i from P\link{i,.}.
+\item{transformation}{The transformation to compute the pi_i from \code{P[i,.]}.
 Defaults to ilrInv}
 }
 \value{
-The draws object with the pi\link{i,k} variables added.
+The draws object with the \code{pi[i,k]} variables added.
 }
 \description{
 A function to compute a posteriori the pi_i probabilities

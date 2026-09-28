@@ -4,7 +4,7 @@
 \alias{param_multinom_probs_Z_poisson}
 \title{Compute multinomial probabilities of Z in the classical Poisson LBM}
 \usage{
-param_multinom_probs_Z_poisson(Y, alpha, W, pi, tol = TOL)
+param_multinom_probs_Z_poisson(Y, alpha, W, pi, mask, tol = TOL)
 }
 \arguments{
 \item{Y}{Non-negative integer matrix of observed counts.}
@@ -15,6 +15,8 @@ param_multinom_probs_Z_poisson(Y, alpha, W, pi, tol = TOL)
 indicating the membership of column node \eqn{j}}
 
 \item{pi}{a vector of size K containing the row block proportions}
+
+\item{mask}{a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.}
 
 \item{tol}{Numeric; a small number used to clamp probabilities to
 \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance}
