@@ -217,6 +217,7 @@ simulate_P <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
 #' @param transformation a transformation that sends values from \eqn{\mathbb{R}^{K-1}} to \eqn{\Delta_{K}}
 #'
 #' @return A factor with the Z assignments
+#' @export
 simulate_Z_from_P <- function(P, transformation = ilrInvcpp) {
   probs <- ilrInvcpp(P)
   K <- ncol(probs)
