@@ -17,6 +17,7 @@ export(sample_P_metropolis_trick)
 export(sample_P_metropolis_trick_cpp)
 export(sample_P_metropolis_trick_cpp_block)
 export(simulate_P)
+export(simulate_Z_from_P)
 importFrom(MCMCpack,rdirichlet)
 importFrom(Rcpp,sourceCpp)
 importFrom(stats,
