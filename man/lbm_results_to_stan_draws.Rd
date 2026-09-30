@@ -32,6 +32,9 @@ two alpha matrices. Defaults to \code{\link[=find_permutation_alphas]{find_permu
 \item{apply_burnin_thinning}{Logical; if \code{TRUE} the first half of the
 iterations are discarded as burn-in and the remaining ones are thinned
 by a factor of 10. Defaults to \code{FALSE}.}
+
+\item{delabel_switch}{A boolean indicating if we should perform
+delabel-switching or not. Defaults to TRUE}
 }
 \value{
 A \link[posterior:draws_array]{posterior::draws_array} with dimensions

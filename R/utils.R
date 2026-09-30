@@ -67,11 +67,13 @@ row_normalize_matrix <- function(mat, is_log = TRUE, tol = NULL) {
 #' @param draws A posterior array in the form Iteration x Chain x Parameter.
 #' @param n The number of individuals, the rows of the outputted covariance matrix.
 #' @param K The number of blocks, in the latent continuous space there are K-1 columns.
+#' @param corr A boolean indicating if the output should be correlation or covariance
 #'
 #' @importFrom stats cor cov
 #' @return A covariance matrix
 #' @export
 build_covariance_matrix <- function(draws, n, K, corr = FALSE) {
+  lifecycle::deprecate_warn(when = "0.0.9000", what = "build_covariance_matrix()", details = "This method relying on only K-1 variables is really unstable to measure covariance. This function will be deprecated")
   # Function implementation would go here
   P_draws <- posterior::subset_draws(draws, variable = "P")
   P_array <- aperm(
@@ -587,6 +589,8 @@ delabel_switch_stan_per_iteration <- function(draws, K, R, Psi_function = defaul
 #' @param apply_burnin_thinning Logical; if `TRUE` the first half of the
 #'   iterations are discarded as burn-in and the remaining ones are thinned
 #'   by a factor of 10. Defaults to `FALSE`.
+#' @param delabel_switch A boolean indicating if we should perform
+#' delabel-switching or not. Defaults to TRUE
 #'
 #' @return A [posterior::draws_array] with dimensions
 #'   iteration \eqn{\times} chain \eqn{\times} parameter.
@@ -703,7 +707,7 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
 
 #' A function to compute a posteriori the pi_i probabilities
 #'
-#' @param draws A Stan draw object containing all the \code{P[i,k]} latent position
+#' @param draws a Stan draw object containing all the \code{P[i,k]} latent position
 #' @param transformation The transformation to compute the pi_i from \code{P[i,.]}.
 #' Defaults to ilrInv
 #'
@@ -733,6 +737,8 @@ compute_pi_from_P <- function(draws, transformation = ilrInv) {
   k_vals <- as.integer(idx[, 3])
 
   I <- max(i_vals)
+  K <- max(k_vals)
+
 
   list_of_pi_draws_per_chain <- lapply(seq_len(posterior::nchains(P_draws)), function(chain_idx) {
     current_P_chain <- P_draws_chain_list[[chain_idx]]
@@ -846,7 +852,7 @@ mse <- function(x, y) sum((x - y)^2)
 #' Inverse pivot coordinate transformation
 #'
 #' Performs the inverse pivot coordinate transformation for the latent covariance stochastic block model
-#' @param x Input matrix
+#' @param z Input matrix
 #' @param basis The basis to use
 #' @return Transformed matrix
 ilrInv <- function(z, basis = default_Psi_function(ncol(z) + 1)) {

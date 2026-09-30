@@ -44,7 +44,7 @@ cov_of_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, i) {
 #' @param Sigma a covariance matrix between the row nodes
 #' @param sigma2 variance parameter indicating the variance between the
 #'   K-1 columns of P
-#' @param indiv_indicees 0-based indices of the rows to compute the conditional
+#' @param indiv_indices 0-based indices of the rows to compute the conditional
 #' for
 #' @return the conditional mean, a row vector of length \eqn{K-1}
 block_mean_of_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, indiv_indices) {
@@ -103,7 +103,7 @@ sample_P_metropolis_trick_cpp <- function(P, Z, Sigma, sigma2, minibatch = TRUE,
 
 #' A Metropolis-Hastings sampler for P with the clever proposition and block
 #' update (C++)
-#' @inheritParams sample_P_metropolis_trick
+#' @inheritParams sample_P_metropolis_trick_cpp
 #' @param block_size the size of blocks to update simultaneously (default: 1
 #' for individual updates) ' @return an updated matrix of latent positions, of
 #' the same size ' as \code{P} ' @seealso [sample_P_metropolis_classical()], '
@@ -130,6 +130,8 @@ rmatrixnormal_cpp <- function(M, U, V) {
 #' @param M a matrix of size n,p the mean of the matrix normal
 #' @param U a variance-covariance matrix for the rows of Y
 #' @param V a variance-covariance matrix for the columns of Y
+#' @param log_p a boolean indicating wether or not to return the log-density.
+#' Defaults to FALSE
 #'
 #' @returns the density a scalar
 dmatrixnormal_cpp <- function(X, M, U, V, log_p = FALSE) {
@@ -150,7 +152,7 @@ default_Psi_function_cpp <- function(K) {
 #' covariance stochastic block model, mapping the \eqn{K-1} latent
 #' coordinates of a row back to the \eqn{K}-simplex of membership
 #' probabilities.
-#' @param x Input matrix (\eqn{n \times K-1}) of latent coordinates
+#' @param z Input matrix (\eqn{n \times K-1}) of latent coordinates
 #' @param basis The basis to use
 #' @param log if \code{TRUE}, the log-probabilities are returned
 #' @return A matrix (\eqn{n \times K}) of (log) simplex probabilities

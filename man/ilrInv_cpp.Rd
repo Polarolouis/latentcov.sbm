@@ -7,11 +7,11 @@
 ilrInv_cpp(z, basis, log = FALSE)
 }
 \arguments{
+\item{z}{Input matrix (\eqn{n \times K-1}) of latent coordinates}
+
 \item{basis}{The basis to use}
 
 \item{log}{if \code{TRUE}, the log-probabilities are returned}
-
-\item{x}{Input matrix (\eqn{n \times K-1}) of latent coordinates}
 }
 \value{
 A matrix (\eqn{n \times K}) of (log) simplex probabilities

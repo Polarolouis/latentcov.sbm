@@ -14,6 +14,9 @@ dmatrixnormal_cpp(X, M, U, V, log_p = FALSE)
 \item{U}{a variance-covariance matrix for the rows of Y}
 
 \item{V}{a variance-covariance matrix for the columns of Y}
+
+\item{log_p}{a boolean indicating wether or not to return the log-density.
+Defaults to FALSE}
 }
 \value{
 the density a scalar

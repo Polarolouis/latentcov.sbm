@@ -12,6 +12,8 @@ build_covariance_matrix(draws, n, K, corr = FALSE)
 \item{n}{The number of individuals, the rows of the outputted covariance matrix.}
 
 \item{K}{The number of blocks, in the latent continuous space there are K-1 columns.}
+
+\item{corr}{A boolean indicating if the output should be correlation or covariance}
 }
 \value{
 A covariance matrix

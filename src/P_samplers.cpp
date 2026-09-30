@@ -218,7 +218,7 @@ arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
 
 //' A Metropolis-Hastings sampler for P with the clever proposition and block
 //' update (C++)
-//' @inheritParams sample_P_metropolis_trick
+//' @inheritParams sample_P_metropolis_trick_cpp
 //' @param block_size the size of blocks to update simultaneously (default: 1
 //' for individual updates) ' @return an updated matrix of latent positions, of
 //' the same size ' as \code{P} ' @seealso [sample_P_metropolis_classical()], '

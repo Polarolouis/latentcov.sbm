@@ -7,9 +7,9 @@
 ilrInv(z, basis = default_Psi_function(ncol(z) + 1))
 }
 \arguments{
-\item{basis}{The basis to use}
+\item{z}{Input matrix}
 
-\item{x}{Input matrix}
+\item{basis}{The basis to use}
 }
 \value{
 Transformed matrix

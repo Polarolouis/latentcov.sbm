@@ -19,6 +19,8 @@ arma::mat rmatrixnormal_cpp(const arma::mat &M, const arma::mat &U,
 //' @param M a matrix of size n,p the mean of the matrix normal
 //' @param U a variance-covariance matrix for the rows of Y
 //' @param V a variance-covariance matrix for the columns of Y
+//' @param log_p a boolean indicating wether or not to return the log-density.
+//' Defaults to FALSE
 //'
 //' @returns the density a scalar
 // [[Rcpp::export]]
@@ -51,7 +53,7 @@ arma::mat default_Psi_function_cpp(int K) {
 //' covariance stochastic block model, mapping the \eqn{K-1} latent
 //' coordinates of a row back to the \eqn{K}-simplex of membership
 //' probabilities.
-//' @param x Input matrix (\eqn{n \times K-1}) of latent coordinates
+//' @param z Input matrix (\eqn{n \times K-1}) of latent coordinates
 //' @param basis The basis to use
 //' @param log if \code{TRUE}, the log-probabilities are returned
 //' @return A matrix (\eqn{n \times K}) of (log) simplex probabilities

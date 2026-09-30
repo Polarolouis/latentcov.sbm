@@ -18,7 +18,7 @@ gibbs_sampling_lbm_poisson(
   known_Z = NULL,
   known_pi = NULL,
   tol = TOL,
-  verbose = FALSE,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
   force_order = FALSE
 )

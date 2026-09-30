@@ -7,3 +7,5 @@
 ^\.lintr$
 ^\.cache$
 ^\.vscode$
+^dev$
+^compile_commands\.json$

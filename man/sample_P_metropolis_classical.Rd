@@ -12,7 +12,7 @@ sample_P_metropolis_classical(
   minibatch = TRUE,
   niter_metropolis = 50L,
   rho = 1,
-  verbose = FALSE
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE)
 )
 }
 \arguments{
@@ -32,6 +32,8 @@ indicating the membership of row node \eqn{i}, \eqn{Z_{i,k} = 1} if \eqn{i} is i
 \item{niter_metropolis}{an integer specifying the number of metropolis iterations to perform. Defaults to 50.}
 
 \item{rho}{a double indicating the variance of the gaussian proposal distribution.}
+
+\item{verbose}{a boolean indicating if verbose message should be outputted.}
 }
 \description{
 A Metropolis-Hasting sampler for with standard random walk

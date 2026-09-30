@@ -32,6 +32,8 @@ indicating the membership of row node \eqn{i}, \eqn{Z_{i,k} = 1} if \eqn{i} is i
 
 \item{niter_metropolis}{an integer specifying the number of metropolis iterations to perform. Defaults to 50.}
 
+\item{rho}{unused double for compatibility only}
+
 \item{block_size}{the size of blocks to update simultaneously (default: 1
 for individual updates) ' @return an updated matrix of latent positions, of
 the same size ' as \code{P} ' @seealso \code{\link[=sample_P_metropolis_classical]{sample_P_metropolis_classical()}}, '

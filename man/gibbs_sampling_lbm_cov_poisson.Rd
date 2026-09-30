@@ -24,7 +24,7 @@ gibbs_sampling_lbm_cov_poisson(
   P_sampler = sample_P_metropolis_trick_cpp,
   minibatch = TRUE,
   tol = TOL,
-  verbose = FALSE,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = ""
 )
 }

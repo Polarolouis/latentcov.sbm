@@ -7,7 +7,7 @@
 compute_pi_from_P(draws, transformation = ilrInv)
 }
 \arguments{
-\item{draws}{A Stan draw object containing all the \code{P[i,k]} latent position}
+\item{draws}{a Stan draw object containing all the \code{P[i,k]} latent position}
 
 \item{transformation}{The transformation to compute the pi_i from \code{P[i,.]}.
 Defaults to ilrInv}

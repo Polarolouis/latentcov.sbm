@@ -19,18 +19,14 @@ LinkingTo:
     RcppArmadillo
 Imports: 
     aricode,
-    bayesplot,
     cli,
     clue,
-    dplyr,
     futurize,
-    ggplot2,
     gtools,
+    lifecycle,
     MASS,
     MCMCpack,
     mvtnorm,
-    patchwork,
     posterior,
     progressr,
-    Rcpp,
-    reshape2
+    Rcpp

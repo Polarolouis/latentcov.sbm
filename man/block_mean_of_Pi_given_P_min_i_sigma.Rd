@@ -15,7 +15,7 @@ positions}
 \item{sigma2}{variance parameter indicating the variance between the
 K-1 columns of P}
 
-\item{indiv_indicees}{0-based indices of the rows to compute the conditional
+\item{indiv_indices}{0-based indices of the rows to compute the conditional
 for}
 }
 \value{
