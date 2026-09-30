@@ -890,6 +890,18 @@ mask_NA <- function(Y, replace_value = 0) {
   return(list(YnoNA = YnoNA, mask = mask))
 }
 
+#' Zero out missing entries before applying `mask` so that `NA * 0 = NA` does
+#' not leak NA into subsequent computations. Robust whether `Y` already has its
+#' NAs replaced (as done before handing it to downstream functions) or not.
+#'
+#' @param Y the adjacency matrix with or without NA
+#' @param mask the mask indicating position of NA in Y
+#'
+#' @return Y_obs the matrix Y with its NAs masked and replaced
+mask_observed <- function(Y, mask) {
+  replace(Y, is.na(Y), 0) * mask
+}
+
 simulate_SBM_alpha_Z_W <- function(alpha, Z, W) {
   ind_Z <- .one_hot(Z, nrow(alpha))
   ind_W <- .one_hot(W, ncol(alpha))

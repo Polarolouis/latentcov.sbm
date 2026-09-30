@@ -154,7 +154,7 @@ sample_pi_given_Z <- function(etas_post) {
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
 param_multinom_probs_Z_poisson <- function(Y, alpha, W, pi, mask, tol = TOL) {
-  Y_obs <- Y * mask
+  Y_obs <- mask_observed(Y, mask)
   R_W <- Y_obs %*% W
   N_W <- mask %*% W # diag(colSums(W))
   unormalized_log_probs <- matrix(1, nrow = nrow(Y)) %*% log(pi) + R_W %*% log(t(alpha)) - N_W %*% t(alpha)
@@ -227,7 +227,7 @@ sample_rho_given_W <- function(gammas_post) {
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
 param_multinom_probs_Z_cov_poisson <- function(Y, alpha, W, P, mask, tol = TOL) {
-  Y_obs <- Y * mask
+  Y_obs <- mask_observed(Y, mask)
   R_W <- Y_obs %*% W
   N_W <- mask %*% W # diag(colSums(W))
   unormalized_log_probs <- log(ilrInv(P)) + R_W %*% log(t(alpha)) - N_W %*% t(alpha)
@@ -268,7 +268,7 @@ sample_Z_given_alpha_P_Y_W <- function(probs) {
 #'
 #' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
 param_multinom_probs_W_poisson <- function(Y, alpha, Z, rho, mask, tol = TOL) {
-  Y_obs <- Y * mask
+  Y_obs <- mask_observed(Y, mask)
   R_Z <- t(Y_obs) %*% Z
   N_Z <- t(mask) %*% Z # diag(colSums(Z))
   unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*% log(rho) + R_Z %*% log(alpha) - N_Z %*% alpha
@@ -309,7 +309,7 @@ sample_W_given_alpha_rho_Y_Z <- function(probs) {
 #'
 #' @return a list with `shape` and `rate` matrices (\eqn{K \times R}) of the posterior Gamma parameters
 param_alpha_given_Y_Z_W_poisson <- function(a0, b0, Y, Z, W, mask) {
-  Y_obs <- Y * mask
+  Y_obs <- mask_observed(Y, mask)
 
   return(list(shape = a0 + t(Z) %*% Y_obs %*% W, rate = b0 + t(Z) %*% mask %*% W))
 }
