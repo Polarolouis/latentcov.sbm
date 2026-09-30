@@ -760,43 +760,23 @@ compute_pi_from_P <- function(draws, transformation = ilrInv) {
   return(posterior::bind_draws(draws, pi_draws, along = "variable"))
 }
 
-compute_meanpi_from_pi_i <- function(draws) {
-  pi_draws <- posterior::subset_draws(draws, variable = "pi")
+#' A function to compute a posteriori the mean \eqn{\hat{\pi}} from
+#' \eqn{\hat{Z}} at each iteration
+#'
+#' @param draws a Stan draw object containing all the \code{Z[i]} from which to
+#' compute the \eqn{\hat{\pi}}
+#'
+#' @return a Stan draw object with the new meanpi variables added
+compute_meanpi <- function(draws) {
+  Z_draws <- posterior::subset_draws(draws, variable = "Z")
 
-  pi_draws_chain_list <- lapply(seq_len(posterior::nchains(pi_draws)), function(chain_idx) posterior::subset_draws(pi_draws, chain = chain_idx))
+  meanpi_draws <- Z_draws |>
+    apply(c(1, 2), function(x) prop.table(table(x)))
+  rownames(meanpi_draws) <- paste0("meanpi[", seq_len(nrow(meanpi_draws)), "]")
+  meanpi_draws <- meanpi_draws |>
+    aperm(c(2, 3, 1)) |>
+    posterior::as_draws_array()
 
-  pi_df <- posterior::as_draws_df(pi_draws)
-
-  pi_names <- grep("^pi\\[", names(pi_df), value = TRUE)
-
-  # Extraire i et k
-  idx <- do.call(
-    rbind,
-    regmatches(
-      pi_names,
-      regexec("^pi\\[([0-9]+),([0-9]+)\\]$", pi_names)
-    )
-  )
-
-  i_vals <- as.integer(idx[, 2])
-  k_vals <- as.integer(idx[, 3])
-  K <- max(k_vals)
-
-  list_of_meanpi_draws_per_chain <- lapply(seq_len(posterior::nchains(pi_draws)), function(chain_idx) {
-    current_pi_chain <- pi_draws_chain_list[[chain_idx]]
-    current_meanpi_draws_matrix <- sapply(seq_len(K), function(k) {
-      cols <- pi_names[k_vals == k]
-
-      mean_pi_k <- current_pi_chain[, , cols] |>
-        as_draws_matrix() |>
-        apply(1, mean)
-    })
-    colnames(current_meanpi_draws_matrix) <- paste0("meanpi[", seq(K), "]")
-    posterior::as_draws_array(current_meanpi_draws_matrix)
-  })
-
-
-  meanpi_draws <- posterior::bind_draws(list_of_meanpi_draws_per_chain, along = "chain")
   return(posterior::bind_draws(draws, meanpi_draws, along = "variable"))
 }
 
