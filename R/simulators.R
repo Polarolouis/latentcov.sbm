@@ -8,7 +8,7 @@
 #'
 #' @return A list containing Z, P, and probs
 #' @importFrom stats rmultinom
-#' @export
+#' @noRd
 simulate_P_and_Z <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
   # ---- Guard rails ---------------------------------------------------------
 
@@ -110,6 +110,16 @@ simulate_P_and_Z <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)
   return(list(Z = Z, P = P, probs = probs))
 }
 
+#' Simulate P matrix
+#'
+#' Simulates the P matrix for the Latent Covariance Stochastic Block Model
+#' @param K number of clusters
+#' @param Sigma covariance matrix
+#' @param sigma2 variance parameter
+#' @param M the mean matrix. Defaults to a null matrix.
+#'
+#' @return the P matrix
+#' @export
 simulate_P <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
   # ---- Guard rails ---------------------------------------------------------
 
@@ -201,6 +211,13 @@ simulate_P <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
   return(P)
 }
 
+#' Simulate Z from the P matrix using a transformation
+#'
+#' @param P a matrix of latent values used to compute the probabilities
+#' @param transformation a transformation that sends values from \eqn{\mathbb{R}^{K-1}} to \eqn{\Delta_{K}}
+#'
+#' @return A factor with the Z assignments
+#' @export
 simulate_Z_from_P <- function(P, transformation = ilrInvcpp) {
   probs <- ilrInvcpp(P)
   K <- ncol(probs)

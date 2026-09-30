@@ -304,7 +304,7 @@ perm_matrix_from_order <- function(order) {
 #' @export
 #' @importFrom utils head tail
 delabel_switch_stan <- function(draws, K, R, alpha_ref = NULL, Psi_function = default_Psi_function, find_permutations = find_permutation_alphas_L2) {
-  stopifnot("There must be at least two chains" = dim(draws)[2] > 1)
+  stopifnot("There must be at least two chains or an alpha_ref" = (dim(draws)[2] > 1 || !is.null(alpha_ref)))
 
   var_idx_alphas <- which(startsWith(dimnames(draws)[[3]], "alpha"))
   start_alpha_var <- head(var_idx_alphas, 1)
@@ -343,10 +343,10 @@ delabel_switch_stan <- function(draws, K, R, alpha_ref = NULL, Psi_function = de
     rho_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "rho"))
     draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][, , col_perm, drop = FALSE]
 
-    ##  pi (if they exists)
-    pi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "pi"))
-    if (length(pi_idx) > 0) {
-      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][, , row_perm, drop = FALSE]
+    ##  meanpi (if they exists)
+    meanpi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "meanpi"))
+    if (length(meanpi_idx) > 0) {
+      draws_delabeled[, chain_idx, meanpi_idx] <- draws[, chain_idx, meanpi_idx][, , row_perm, drop = FALSE]
     }
 
     ## P
@@ -701,6 +701,100 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
   cli::cli_alert_success("This configuration is identifiable in the sense of Keribin et al. !")
 }
 
+#' A function to compute a posteriori the pi_i probabilities
+#'
+#' @param draws A Stan draw object containing all the \code{P[i,k]} latent position
+#' @param transformation The transformation to compute the pi_i from \code{P[i,.]}.
+#' Defaults to ilrInv
+#'
+#' @return The draws object with the \code{pi[i,k]} variables added.
+compute_pi_from_P <- function(draws, transformation = ilrInv) {
+  P_draws <- posterior::subset_draws(
+    draws,
+    variable = "P"
+  )
+
+  P_draws_chain_list <- lapply(seq_len(posterior::nchains(P_draws)), function(chain_idx) posterior::subset_draws(P_draws, chain = chain_idx))
+
+  P_df <- posterior::as_draws_df(P_draws)
+
+  P_names <- grep("^P\\[", names(P_df), value = TRUE)
+
+  # Extraire i et k
+  idx <- do.call(
+    rbind,
+    regmatches(
+      P_names,
+      regexec("^P\\[([0-9]+),([0-9]+)\\]$", P_names)
+    )
+  )
+
+  i_vals <- as.integer(idx[, 2])
+  k_vals <- as.integer(idx[, 3])
+
+  I <- max(i_vals)
+
+  list_of_pi_draws_per_chain <- lapply(seq_len(posterior::nchains(P_draws)), function(chain_idx) {
+    current_P_chain <- P_draws_chain_list[[chain_idx]]
+    posterior::as_draws_array(do.call("cbind", lapply(seq_len(I), function(i) {
+      cols <- P_names[i_vals == i]
+      cols <- cols[order(k_vals[i_vals == i])]
+
+      pi_i_chain_matrix <- current_P_chain[, , cols] |>
+        matrix(ncol = K - 1) |>
+        ilrInv()
+
+      colnames(pi_i_chain_matrix) <- paste0("pi[", i, ",", seq_len(ncol(pi_i_chain_matrix)), "]")
+
+      return(pi_i_chain_matrix)
+    })))
+  })
+
+  pi_draws <- posterior::bind_draws(list_of_pi_draws_per_chain, along = "chain")
+  return(posterior::bind_draws(draws, pi_draws, along = "variable"))
+}
+
+compute_meanpi_from_pi_i <- function(draws) {
+  pi_draws <- posterior::subset_draws(draws, variable = "pi")
+
+  pi_draws_chain_list <- lapply(seq_len(posterior::nchains(pi_draws)), function(chain_idx) posterior::subset_draws(pi_draws, chain = chain_idx))
+
+  pi_df <- posterior::as_draws_df(pi_draws)
+
+  pi_names <- grep("^pi\\[", names(pi_df), value = TRUE)
+
+  # Extraire i et k
+  idx <- do.call(
+    rbind,
+    regmatches(
+      pi_names,
+      regexec("^pi\\[([0-9]+),([0-9]+)\\]$", pi_names)
+    )
+  )
+
+  i_vals <- as.integer(idx[, 2])
+  k_vals <- as.integer(idx[, 3])
+  K <- max(k_vals)
+
+  list_of_meanpi_draws_per_chain <- lapply(seq_len(posterior::nchains(pi_draws)), function(chain_idx) {
+    current_pi_chain <- pi_draws_chain_list[[chain_idx]]
+    current_meanpi_draws_matrix <- sapply(seq_len(K), function(k) {
+      cols <- pi_names[k_vals == k]
+
+      mean_pi_k <- current_pi_chain[, , cols] |>
+        as_draws_matrix() |>
+        apply(1, mean)
+    })
+    colnames(current_meanpi_draws_matrix) <- paste0("meanpi[", seq(K), "]")
+    posterior::as_draws_array(current_meanpi_draws_matrix)
+  })
+
+
+  meanpi_draws <- posterior::bind_draws(list_of_meanpi_draws_per_chain, along = "chain")
+  return(posterior::bind_draws(draws, meanpi_draws, along = "variable"))
+}
+
+
 #' One-hot encode a vector of labels (internal)
 #'
 #' @param x A vector of group labels (integers from 1 to `Q`).
@@ -762,6 +856,10 @@ ilrInv <- function(z, basis = default_Psi_function(ncol(z) + 1)) {
 }
 
 ilr <- function(x, basis = default_Psi_function(ncol(x))) {
+  if (is.vector(x)) {
+    cli::cli_warn("{.arg x} is a vector, casting it to a one row matrix.")
+    x <- matrix(x, nrow = 1)
+  }
   clr(x) %*% t(basis)
 }
 
@@ -782,4 +880,33 @@ stick_breaking <- function(x) {
     }
     return(.logit(x[idx]) * sum(.logit(x[seq(idx - 1)])))
   })
+}
+
+mask_NA <- function(Y, replace_value = 0) {
+  mask <- (!is.na(Y)) * 1L
+  YnoNA <- Y
+  YnoNA[which(mask == 0)] <- replace_value
+
+  return(list(YnoNA = YnoNA, mask = mask))
+}
+
+#' Zero out missing entries before applying `mask` so that `NA * 0 = NA` does
+#' not leak NA into subsequent computations. Robust whether `Y` already has its
+#' NAs replaced (as done before handing it to downstream functions) or not.
+#'
+#' @param Y the adjacency matrix with or without NA
+#' @param mask the mask indicating position of NA in Y
+#'
+#' @return Y_obs the matrix Y with its NAs masked and replaced
+mask_observed <- function(Y, mask) {
+  replace(Y, is.na(Y), 0) * mask
+}
+
+simulate_SBM_alpha_Z_W <- function(alpha, Z, W) {
+  ind_Z <- .one_hot(Z, nrow(alpha))
+  ind_W <- .one_hot(W, ncol(alpha))
+
+  meanmat <- ind_Z %*% alpha %*% t(ind_W)
+
+  matrix(rpois(n = nrow(ind_Z) * nrow(ind_W), meanmat), nrow(ind_Z))
 }
