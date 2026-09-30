@@ -61,7 +61,7 @@ gibbs_sampling_lbm_poisson <- function(
   known_Z = NULL,
   known_pi = NULL,
   tol = TOL,
-  verbose = FALSE,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
   force_order = FALSE
 ) {
@@ -276,7 +276,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
   P_sampler = sample_P_metropolis_trick_cpp,
   minibatch = TRUE,
   tol = TOL,
-  verbose = FALSE,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = ""
 ) {
   # Forcing future exports

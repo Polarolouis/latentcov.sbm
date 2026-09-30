@@ -12,8 +12,10 @@
 #' @param minibatch a boolean indicating wether to update the rows in the lexical order or to sample at each iteration. Default to TRUE
 #' @param niter_metropolis an integer specifying the number of metropolis iterations to perform. Defaults to 50.
 #' @param rho a double indicating the variance of the gaussian proposal distribution.
+#' @param verbose a boolean indicating if verbose message should be outputted.
+#'
 #' @export
-sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1, verbose = FALSE) {
+sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1, verbose = getOption("latentcov.sbm.verbose", default = FALSE)) {
   n <- nrow(P)
   out_P <- array(P, dim = dim(P), dimnames = list("Individual" = paste0("P", seq_len(nrow(P))), "Coordinates" = seq_len(ncol(P))))
   # Updating P
