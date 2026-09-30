@@ -12,7 +12,7 @@ compute_meanpi(draws)
 compute the \eqn{\hat{\pi}}}
 }
 \value{
-a Stan draw object with the new meanpi
+a Stan draw object with the new meanpi variables added
 }
 \description{
 A function to compute a posteriori the mean \eqn{\hat{\pi}} from
