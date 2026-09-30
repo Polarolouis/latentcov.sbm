@@ -343,7 +343,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
   ### Z
   if (is.null(init_Z)) {
     Z <- sapply(seq_len(nrow(Y)), function(j) {
-      (seq(K) == sample.int(n = K, size = 1, replace = TRUE, prob = pivotCoordInv(current_P)[j, ])) * 1
+      (seq(K) == sample.int(n = K, size = 1, replace = TRUE, prob = ilrInv(current_P)[j, ])) * 1
     }) |> t()
   } else {
     Z <- init_Z
