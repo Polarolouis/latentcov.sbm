@@ -901,12 +901,3 @@ mask_NA <- function(Y, replace_value = 0) {
 mask_observed <- function(Y, mask) {
   replace(Y, is.na(Y), 0) * mask
 }
-
-simulate_SBM_alpha_Z_W <- function(alpha, Z, W) {
-  ind_Z <- .one_hot(Z, nrow(alpha))
-  ind_W <- .one_hot(W, ncol(alpha))
-
-  meanmat <- ind_Z %*% alpha %*% t(ind_W)
-
-  matrix(rpois(n = nrow(ind_Z) * nrow(ind_W), meanmat), nrow(ind_Z))
-}

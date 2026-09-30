@@ -133,3 +133,25 @@ simulate_Z_from_P <- function(P, transformation = ilrInvcpp) {
   })
   return(Z)
 }
+
+#' Simulate an SBM from alpha, Z and W with a Poisson emission distribution
+#'
+#' @param alpha the connectivity matrix, real numbers
+#' @param Z a vector with integer (or factor) indicating the clusters of the
+#' row nodes
+#' @param W a vector with integer (or factor) indicating the clusters of the
+#' column nodes
+#'
+#' @return a (bi-)adjacency matrix sampled from the parameters of size \code{length(Z)*length(W)}
+simulate_Poisson_SBM_alpha_Z_W <- function(alpha, Z, W) {
+  ind_Z <- .one_hot(Z, nrow(alpha))
+  ind_W <- .one_hot(W, ncol(alpha))
+
+  meanmat <- ind_Z %*% alpha %*% t(ind_W)
+
+  matrix(stats::rpois(n = nrow(ind_Z) * nrow(ind_W), meanmat), nrow(ind_Z))
+}
+
+#' @rdname simulate_Poisson_SBM_alpha_Z_W
+#' @export
+simulate_SBM_alpha_Z_W <- simulate_Poisson_SBM_alpha_Z_W
