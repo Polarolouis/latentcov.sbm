@@ -84,3 +84,41 @@ sample_P_metropolis_trick <- function(P, Z, Sigma, sigma2, minibatch = TRUE, nit
   }
   return(out_P)
 }
+
+#' Soft Metropolis sampler for P under mixed membership
+#'
+#' Metropolis-Hastings sampler for the latent positions `P` with the clever
+#' proposal (as in [sample_P_metropolis_trick()]) but under a
+#' *mixed-membership* likelihood: instead of conditioning on the single
+#' hard assignment `which.max(Z[i, ])`, the acceptance ratio weights the
+#' categorical log-likelihood over all blocks by the soft memberships of row
+#' `i`.
+#'
+#' @inheritParams sample_P_metropolis_trick
+#' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
+#'   probabilities (rows sum to 1) in lieu of a hard indicator matrix
+#'
+#' @return an updated matrix of latent positions, of the same size as `P`
+#' @export
+sample_P_metropolis_trick_soft <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, ...) {
+  n <- nrow(P)
+  out_P <- array(P, dim = dim(P), dimnames = list("Individual" = paste0("P", seq_len(nrow(P))), "Coordinates" = seq_len(ncol(P))))
+  row_order <- if (minibatch) sample(x = n, size = n) else seq(1, n)
+  for (ind_iter in seq(n)) {
+    i <- row_order[ind_iter]
+    for (iter_metro in seq(niter_metropolis)) {
+      Pi_candidate <- sample_Pi_given(P = P, Sigma = Sigma, sigma2 = sigma2, i = i)
+
+      # Mixed-membership log-likelihood ratio:
+      #   sum_k Z_soft[i,k] * (log ilrInv(P_i^cand)[k] - log ilrInv(P_i)[k])
+      log_accept <- sum(Z[i, ] * (log(ilrInv(matrix(Pi_candidate, nrow = 1))) - log(ilrInv(matrix(P[i, ], nrow = 1)))))
+      log_u <- log(runif(n = 1))
+
+      if (log_u < log_accept) {
+        out_P[i, ] <- Pi_candidate
+        P[i, ] <- Pi_candidate
+      }
+    }
+  }
+  return(out_P)
+}
