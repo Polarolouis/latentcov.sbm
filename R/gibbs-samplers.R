@@ -203,33 +203,6 @@ gibbs_sampling_lbm_poisson <- function(
   return(out_array)
 }
 
-#' Run nchains of LBM Poisson Gibbs Sampler
-#'
-#' Runs several independent chains of [gibbs_sampling_lbm_poisson()]
-#' concurrently, prefixing each chain logs with its index.
-#'
-#' @param nchains the number of chains to run concurrently
-#' @param auto_save_path the base name from which each chain will be
-#' named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
-#' the end. Defaults to
-#' @inheritDotParams gibbs_sampling_lbm_poisson
-#'
-#' @return A stan draws array with concatenated chains results of[gibbs_sampling_lbm_poisson()].
-#' @export
-chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile("lbm_poisson_"), ...) {
-  if (verbose) {
-    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
-  }
-  out_list <- lapply(seq(nchains), function(i) {
-    gibbs_sampling_lbm_poisson(..., prefix = paste0("Chain ", i, " - "), auto_save_path = paste0(auto_save_path, "_", i, ".Rds"))
-  }) |> futurize::futurize(seed = TRUE)
-  out_draws <- out_list[[1]]
-  for (idx in seq_along(out_list[-1])) {
-    out_draws <- posterior::bind_draws(out_draws, out_list[[idx + 1]], along = "chain")
-  }
-  return(out_draws)
-}
-
 ## Full LBM with latent phylo Poisson
 
 #' Gibbs sampler for latent phylogenetic Poisson LBM
@@ -477,6 +450,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
 #' @param init_Z NULL (default) or an (\eqn{n_1 \times K}) matrix of initial
 #'   **soft** memberships (rows sum to 1). If NULL the memberships are
 #'   initialized from `ilrInv(current_P)`.
+#' @param auto_save_path
 #'
 #' @return A list with sampled trajectories:
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_post_probs_array`, `rho_array`, `alpha_array`.
@@ -494,10 +468,14 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   minibatch = TRUE,
   tol = TOL,
   verbose = FALSE,
-  prefix = ""
+  prefix = "",
+  auto_save_path = tempfile(pattern = "lbmcovsoft_poisson_", fileext = ".Rds")
 ) {
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
+  if (verbose) {
+    cli::cli_inform("The state of the chain will be saved to {.file {auto_save_path}} at each iteration")
+  }
   # Initialize the whole arrays of variables
   sigma2_array <- array(NA, dim = c(niter, 1), dimnames = list("Iteration" = seq(niter), "Parameter" = "sigma2"))
 
@@ -618,26 +596,36 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
     ### Z_post_probs | P, W, Y, alpha (kept soft, no hard draw)
     Z_post_probs <- param_multinom_probs_Z_cov_poisson(Y = Y, alpha = current_alpha, W = W, P = current_P, tol = tol)
     Z_post_probs_array[iter, , ] <- Z_post_probs
+    out_list <- list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_post_probs_array = Z_post_probs_array, rho_array = rho_array, alpha_array = alpha_array)
+    out_array <- posterior::as_draws_array(list_arrays_to_stan(array_list = out_list))
+    if (iter %% 100 == 0) {
+      auto_save(object = out_array, path = auto_save_path, verbose = verbose)
+    }
     pb()
   }
-  out_list <- list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_post_probs_array = Z_post_probs_array, rho_array = rho_array, alpha_array = alpha_array)
-  return(posterior::as_draws_array(list_arrays_to_stan(array_list = out_list)))
+
+  return(out_array)
 }
 
-#' Run nchains of the mixed-membership latent phylogenetic Poisson LBM Gibbs sampler
+#' Run nchains of LBM Poisson Gibbs Sampler
 #'
-#' Runs several independent chains of [gibbs_sampling_lbm_cov_poisson_mixed_membership()]
+#' Runs several independent chains of [gibbs_sampling_lbm_poisson()]
 #' concurrently, prefixing each chain logs with its index.
 #'
 #' @param nchains the number of chains to run concurrently
-#' @inheritDotParams gibbs_sampling_lbm_cov_poisson_mixed_membership
+#' @param auto_save_path the base name from which each chain will be
+#' named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
+#' the end. Defaults to
+#' @inheritDotParams gibbs_sampling_lbm_poisson
 #'
-#' @return A list of length `nchains` where each element is the output
-#'   of a single call to [gibbs_sampling_lbm_cov_poisson_mixed_membership()].
+#' @return A stan draws array with concatenated chains results of[gibbs_sampling_lbm_poisson()].
 #' @export
-chains_gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(nchains, ...) {
+chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile("lbm_poisson_"), ...) {
+  if (verbose) {
+    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
+  }
   out_list <- lapply(seq(nchains), function(i) {
-    gibbs_sampling_lbm_cov_poisson_mixed_membership(..., prefix = paste0("Chain ", i, " - "))
+    gibbs_sampling_lbm_poisson(..., prefix = paste0("Chain ", i, " - "), auto_save_path = paste0(auto_save_path, "_", i, ".Rds"))
   }) |> futurize::futurize(seed = TRUE)
   out_draws <- out_list[[1]]
   for (idx in seq_along(out_list[-1])) {
@@ -662,6 +650,31 @@ chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, auto_save_path = temp
   }
   out_list <- lapply(seq(nchains), function(i) {
     gibbs_sampling_lbm_cov_poisson(..., prefix = paste0("Chain ", i, " - "), auto_save_path = paste0(auto_save_path, "_", i, ".Rds"))
+  }) |> futurize::futurize(seed = TRUE)
+  out_draws <- out_list[[1]]
+  for (idx in seq_along(out_list[-1])) {
+    out_draws <- posterior::bind_draws(out_draws, out_list[[idx + 1]], along = "chain")
+  }
+  return(out_draws)
+}
+
+#' Run nchains of the mixed-membership latent phylogenetic Poisson LBM Gibbs sampler
+#'
+#' Runs several independent chains of [gibbs_sampling_lbm_cov_poisson_mixed_membership()]
+#' concurrently, prefixing each chain logs with its index.
+#'
+#' @param nchains the number of chains to run concurrently
+#' @inheritDotParams gibbs_sampling_lbm_cov_poisson_mixed_membership
+#'
+#' @return A list of length `nchains` where each element is the output
+#'   of a single call to [gibbs_sampling_lbm_cov_poisson_mixed_membership()].
+#' @export
+chains_gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(nchains, auto_save_path = tempfile("lbmsoft_poisson_"), ...) {
+  if (verbose) {
+    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
+  }
+  out_list <- lapply(seq(nchains), function(i) {
+    gibbs_sampling_lbm_cov_poisson_mixed_membership(..., prefix = paste0("Chain ", i, " - "))
   }) |> futurize::futurize(seed = TRUE)
   out_draws <- out_list[[1]]
   for (idx in seq_along(out_list[-1])) {
