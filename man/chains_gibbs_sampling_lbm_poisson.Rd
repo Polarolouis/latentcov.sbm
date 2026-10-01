@@ -4,10 +4,18 @@
 \alias{chains_gibbs_sampling_lbm_poisson}
 \title{Run nchains of LBM Poisson Gibbs Sampler}
 \usage{
-chains_gibbs_sampling_lbm_poisson(nchains, ...)
+chains_gibbs_sampling_lbm_poisson(
+  nchains,
+  auto_save_path = tempfile("lbm_poisson_"),
+  ...
+)
 }
 \arguments{
 \item{nchains}{the number of chains to run concurrently}
+
+\item{auto_save_path}{the base name from which each chain will be
+named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
+the end. Defaults to}
 
 \item{...}{
   Arguments passed on to \code{\link{gibbs_sampling_lbm_poisson}}
@@ -51,8 +59,7 @@ alleviate label-switching}
   }}
 }
 \value{
-A list of length \code{nchains} where each element is the output
-of a single call to \code{\link[=gibbs_sampling_lbm_poisson]{gibbs_sampling_lbm_poisson()}}.
+A stan draws array with concatenated chains results of\code{\link[=gibbs_sampling_lbm_poisson]{gibbs_sampling_lbm_poisson()}}.
 }
 \description{
 Runs several independent chains of \code{\link[=gibbs_sampling_lbm_poisson]{gibbs_sampling_lbm_poisson()}}

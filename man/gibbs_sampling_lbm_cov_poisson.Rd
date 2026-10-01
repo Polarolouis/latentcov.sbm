@@ -25,7 +25,8 @@ gibbs_sampling_lbm_cov_poisson(
   minibatch = TRUE,
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
-  prefix = ""
+  prefix = "",
+  auto_save_path = tempfile(pattern = "lbmcov_poisson_", fileext = ".Rds")
 )
 }
 \arguments{
@@ -88,6 +89,9 @@ will print a message each 10 iterations}
 \item{prefix}{Optional character string; a prefix to
 append before logs. Will not print anything if
 \code{verbose=FALSE}. Defaults to '' (empty string)}
+
+\item{auto_save_path}{a path to auto save the chain to. Defaults to
+a temp file}
 }
 \value{
 A list with sampled trajectories:

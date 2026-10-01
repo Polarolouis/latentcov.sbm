@@ -39,6 +39,8 @@
 #' decreasing marginals order(pi%*%alpha,decreasing=TRUE) and
 #' order(alpha %*% rho,decreasing=TRUE) to
 #' alleviate label-switching
+#' @param auto_save_path a path to auto save the chain to. Defaults to
+#' a temp file
 #'
 #' @inheritParams sample_P_metropolis_classical rho
 #'
@@ -63,10 +65,15 @@ gibbs_sampling_lbm_poisson <- function(
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
-  force_order = FALSE
+  force_order = FALSE,
+  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds")
 ) {
   # Forcing future exports
   invisible(c(TOL))
+
+  if (verbose) {
+    cli::cli_inform("The state of the chain will be saved to {.file {auto_save_path}} at each iteration")
+  }
 
   prov_Y <- Y
   mask <- (!is.na(Y)) * 1L
@@ -184,11 +191,16 @@ gibbs_sampling_lbm_poisson <- function(
       (seq(K) == Z_label) * 1
     }))
     Z_array[iter, ] <- current_Z_memb
+
+    out_list <- list(W_array = W_array, Z_array = Z_array, rho_array = rho_array, pi_array = pi_array, alpha_array = alpha_array)
+    out_array <- posterior::as_draws_array(list_arrays_to_stan(array_list = out_list))
+    if (iter %% 100 == 0) {
+      auto_save(object = out_array, path = auto_save_path, verbose = verbose)
+    }
     pb()
   }
-  out_list <- list(W_array = W_array, Z_array = Z_array, rho_array = rho_array, pi_array = pi_array, alpha_array = alpha_array)
 
-  return(posterior::as_draws_array(list_arrays_to_stan(array_list = out_list)))
+  return(out_array)
 }
 
 #' Run nchains of LBM Poisson Gibbs Sampler
@@ -197,14 +209,19 @@ gibbs_sampling_lbm_poisson <- function(
 #' concurrently, prefixing each chain logs with its index.
 #'
 #' @param nchains the number of chains to run concurrently
+#' @param auto_save_path the base name from which each chain will be
+#' named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
+#' the end. Defaults to
 #' @inheritDotParams gibbs_sampling_lbm_poisson
 #'
-#' @return A list of length `nchains` where each element is the output
-#'   of a single call to [gibbs_sampling_lbm_poisson()].
+#' @return A stan draws array with concatenated chains results of[gibbs_sampling_lbm_poisson()].
 #' @export
-chains_gibbs_sampling_lbm_poisson <- function(nchains, ...) {
+chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile("lbm_poisson_"), ...) {
+  if (verbose) {
+    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
+  }
   out_list <- lapply(seq(nchains), function(i) {
-    gibbs_sampling_lbm_poisson(..., prefix = paste0("Chain ", i, " - "))
+    gibbs_sampling_lbm_poisson(..., prefix = paste0("Chain ", i, " - "), auto_save_path = paste0(auto_save_path, "_", i, ".Rds"))
   }) |> futurize::futurize(seed = TRUE)
   out_draws <- out_list[[1]]
   for (idx in seq_along(out_list[-1])) {
@@ -277,10 +294,15 @@ gibbs_sampling_lbm_cov_poisson <- function(
   minibatch = TRUE,
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
-  prefix = ""
+  prefix = "",
+  auto_save_path = tempfile(pattern = "lbmcov_poisson_", fileext = ".Rds")
 ) {
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
+
+  if (verbose) {
+    cli::cli_inform("The state of the chain will be saved to {.file {auto_save_path}} at each iteration")
+  }
 
   prov_Y <- Y
   mask <- (!is.na(Y)) * 1L
@@ -414,10 +436,16 @@ gibbs_sampling_lbm_cov_poisson <- function(
       (seq(K) == Z_label) * 1
     }))
     Z_array[iter, ] <- current_Z_memb
+
+    out_list <- list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_array = Z_array, rho_array = rho_array, alpha_array = alpha_array)
+    out_array <- posterior::as_draws_array(list_arrays_to_stan(array_list = out_list))
+    if (iter %% 100 == 0) {
+      auto_save(object = out_array, path = auto_save_path, verbose = verbose)
+    }
     pb()
   }
-  out_list <- list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_array = Z_array, rho_array = rho_array, alpha_array = alpha_array)
-  return(posterior::as_draws_array(list_arrays_to_stan(array_list = out_list)))
+
+  return(out_array)
 }
 
 ## Mixed-membership LBM with latent phylo Poisson
@@ -661,15 +689,17 @@ chains_gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(nchains, ...)
 #' Runs several independent chains of [gibbs_sampling_lbm_cov_poisson()]
 #' concurrently, prefixing each chain logs with its index.
 #'
-#' @param nchains the number of chains to run concurrently
+#' @inheritParams chains_gibbs_sampling_lbm_poisson
 #' @inheritDotParams gibbs_sampling_lbm_cov_poisson
 #'
-#' @return A list of length `nchains` where each element is the output
-#'   of a single call to [gibbs_sampling_lbm_cov_poisson()].
+#' @return A stan draws array with concatenated chains results of [gibbs_sampling_lbm_cov_poisson()].
 #' @export
-chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, ...) {
+chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, auto_save_path = tempfile("lbmcov_poisson_"), ...) {
+  if (verbose) {
+    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
+  }
   out_list <- lapply(seq(nchains), function(i) {
-    gibbs_sampling_lbm_cov_poisson(..., prefix = paste0("Chain ", i, " - "))
+    gibbs_sampling_lbm_cov_poisson(..., prefix = paste0("Chain ", i, " - "), auto_save_path = paste0(auto_save_path, "_", i, ".Rds"))
   }) |> futurize::futurize(seed = TRUE)
   out_draws <- out_list[[1]]
   for (idx in seq_along(out_list[-1])) {

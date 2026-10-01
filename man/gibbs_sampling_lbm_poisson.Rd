@@ -20,7 +20,8 @@ gibbs_sampling_lbm_poisson(
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
-  force_order = FALSE
+  force_order = FALSE,
+  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds")
 )
 }
 \arguments{
@@ -75,6 +76,9 @@ append before logs. Will not print anything if
 decreasing marginals order(pi\%\emph{\%alpha,decreasing=TRUE) and
 order(alpha \%}\% rho,decreasing=TRUE) to
 alleviate label-switching}
+
+\item{auto_save_path}{a path to auto save the chain to. Defaults to
+a temp file}
 }
 \value{
 A list with sampled trajectories:

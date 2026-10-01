@@ -804,22 +804,6 @@ compute_meanpi <- function(draws) {
   return(as.vector(max.col(X)))
 }
 
-#' A function to check the prior I use
-#'
-#' @param values the true values to see if they are in the credible interval
-#' @param prior_qfunction the prior's quantile function to obtain the bounds
-#' @param ... the parameters to provide to the quantile function
-#'
-#' @importFrom stats qgamma
-#' @return a boolean vector of the size values indicating if the values are in the 95% credibility interval
-prior_checker <- function(values, prior_qfunction = qgamma, ...) {
-  crd_int <- prior_qfunction(c(0.025, 0.975), ...)
-  covered <- values >= crd_int[1] & values <= crd_int[2]
-  cat("Crd interval : [", crd_int[1], ";", crd_int[2], "]\n")
-  cat("Percentage of values covered = ", (sum(covered) / length(covered)) * 100, "%\n")
-  return(covered)
-}
-
 #' Compute the sum of squared errors between two objects
 #'
 #' @param x a numeric vector, matrix or array
@@ -839,6 +823,22 @@ ilrInv <- function(z, basis = default_Psi_function(ncol(z) + 1)) {
   clr <- z %*% basis
   e <- exp(clr - apply(clr, 1, max))
   e / rowSums(e)
+}
+
+#' A function to save and talk if verbose
+#'
+#' @param object the object to save
+#' @param path the path to which save the object, must use an ".Rds" extension. Defaults to \code{tempfile(pattern = "auto", fileext = ".Rds")}
+#' @param message a message to print if \code{verbose == TRUE}
+#' @param verbose a boolean indicating if message should be printed
+#'
+#' @return \code{invisible(path)}
+auto_save <- function(object, path = tempfile(pattern = "auto", fileext = ".Rds"), message = "Saving {.arg {deparse(substitute(object))}} to {.file {path}}", verbose = getOption("latentcov.sbm.verbose", default = FALSE), call = rlang::caller_env()) {
+  if (!is.null(message) && verbose) {
+    cli::cli_inform(message = message, call = call)
+  }
+  saveRDS(object, path)
+  return(invisible(path))
 }
 
 ilr <- function(x, basis = default_Psi_function(ncol(x))) {
