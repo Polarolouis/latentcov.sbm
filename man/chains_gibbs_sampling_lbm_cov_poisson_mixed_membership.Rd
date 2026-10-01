@@ -4,7 +4,11 @@
 \alias{chains_gibbs_sampling_lbm_cov_poisson_mixed_membership}
 \title{Run nchains of the mixed-membership latent phylogenetic Poisson LBM Gibbs sampler}
 \usage{
-chains_gibbs_sampling_lbm_cov_poisson_mixed_membership(nchains, ...)
+chains_gibbs_sampling_lbm_cov_poisson_mixed_membership(
+  nchains,
+  auto_save_path = tempfile("lbmsoft_poisson_"),
+  ...
+)
 }
 \arguments{
 \item{nchains}{the number of chains to run concurrently}
@@ -51,6 +55,8 @@ variable. Default to sample_P_metropolis_trick}
     \item{\code{known_alpha}}{NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix}
     \item{\code{known_W}}{NULL (default) or a matrix (\eqn{n_2\times R})
 indicating the known columns block memberships}
+    \item{\code{auto_save_path}}{a path to auto save the chain to. Defaults to
+a temp file}
   }}
 }
 \value{
