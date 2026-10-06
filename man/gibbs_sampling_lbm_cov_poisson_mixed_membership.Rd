@@ -87,8 +87,7 @@ will print a message each 10 iterations}
 append before logs. Will not print anything if
 \code{verbose=FALSE}. Defaults to '' (empty string)}
 
-\item{auto_save_path}{a path to auto save the chain to. Defaults to
-a temp file}
+\item{auto_save_path}{the path to which results will be autosaved}
 }
 \value{
 A list with sampled trajectories:

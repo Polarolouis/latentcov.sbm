@@ -61,8 +61,6 @@ variable. Default to sample_P_metropolis_trick}
     \item{\code{known_alpha}}{NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix}
     \item{\code{known_W}}{NULL (default) or a matrix (\eqn{n_2\times R})
 indicating the known columns block memberships}
-    \item{\code{auto_save_path}}{a path to auto save the chain to. Defaults to
-a temp file}
   }}
 }
 \value{
