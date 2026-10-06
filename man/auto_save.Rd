@@ -20,6 +20,8 @@ auto_save(
 \item{message}{a message to print if \code{verbose == TRUE}}
 
 \item{verbose}{a boolean indicating if message should be printed}
+
+\item{call}{the context of the call}
 }
 \value{
 \code{invisible(path)}

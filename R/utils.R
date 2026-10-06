@@ -831,7 +831,7 @@ ilrInv <- function(z, basis = default_Psi_function(ncol(z) + 1)) {
 #' @param path the path to which save the object, must use an ".Rds" extension. Defaults to \code{tempfile(pattern = "auto", fileext = ".Rds")}
 #' @param message a message to print if \code{verbose == TRUE}
 #' @param verbose a boolean indicating if message should be printed
-#'
+#' @param call the context of the call
 #' @return \code{invisible(path)}
 auto_save <- function(object, path = tempfile(pattern = "auto", fileext = ".Rds"), message = "Saving {.arg {deparse(substitute(object))}} to {.file {path}}", verbose = getOption("latentcov.sbm.verbose", default = FALSE), call = rlang::caller_env()) {
   if (!is.null(message) && verbose) {

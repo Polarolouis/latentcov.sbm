@@ -7,11 +7,19 @@
 chains_gibbs_sampling_lbm_cov_poisson_mixed_membership(
   nchains,
   auto_save_path = tempfile("lbmsoft_poisson_"),
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   ...
 )
 }
 \arguments{
 \item{nchains}{the number of chains to run concurrently}
+
+\item{auto_save_path}{the base name from which each chain will be
+named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
+the end. Defaults to}
+
+\item{verbose}{a boolean indicating if the function should print messages.
+Defaults to the value of \code{option("latentcov.sbm.verbose")}.}
 
 \item{...}{
   Arguments passed on to \code{\link{gibbs_sampling_lbm_cov_poisson_mixed_membership}}
@@ -43,8 +51,6 @@ tolerance at which one wants to clamp the values,
 i.e., if \code{value<tol} it gets set to tol and if
 \code{value>1-tol} it gets set to \code{1-tol}. Only used for
 probabilities.}
-    \item{\code{verbose}}{Logical; if \code{TRUE} the iterations
-will print a message each 10 iterations}
     \item{\code{prefix}}{Optional character string; a prefix to
 append before logs. Will not print anything if
 \code{verbose=FALSE}. Defaults to '' (empty string)}

@@ -29,4 +29,5 @@ Imports:
     mvtnorm,
     posterior,
     progressr,
-    Rcpp
+    Rcpp,
+    rlang

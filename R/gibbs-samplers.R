@@ -450,7 +450,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
 #' @param init_Z NULL (default) or an (\eqn{n_1 \times K}) matrix of initial
 #'   **soft** memberships (rows sum to 1). If NULL the memberships are
 #'   initialized from `ilrInv(current_P)`.
-#' @param auto_save_path
+#' @param auto_save_path the path to which results will be autosaved
 #'
 #' @return A list with sampled trajectories:
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_post_probs_array`, `rho_array`, `alpha_array`.
@@ -616,11 +616,13 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
 #' @param auto_save_path the base name from which each chain will be
 #' named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
 #' the end. Defaults to
+#' @param verbose a boolean indicating if the function should print messages. 
+#' Defaults to the value of \code{option("latentcov.sbm.verbose")}.
 #' @inheritDotParams gibbs_sampling_lbm_poisson
 #'
 #' @return A stan draws array with concatenated chains results of[gibbs_sampling_lbm_poisson()].
 #' @export
-chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile("lbm_poisson_"), ...) {
+chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile("lbm_poisson_"), verbose = getOption("latentcov.sbm.verbose", default = FALSE), ...) {
   if (verbose) {
     cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
   }
@@ -644,7 +646,7 @@ chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile
 #'
 #' @return A stan draws array with concatenated chains results of [gibbs_sampling_lbm_cov_poisson()].
 #' @export
-chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, auto_save_path = tempfile("lbmcov_poisson_"), ...) {
+chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, auto_save_path = tempfile("lbmcov_poisson_"), verbose = getOption("latentcov.sbm.verbose", default = FALSE), ...) {
   if (verbose) {
     cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
   }
@@ -664,12 +666,13 @@ chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, auto_save_path = temp
 #' concurrently, prefixing each chain logs with its index.
 #'
 #' @param nchains the number of chains to run concurrently
+#' @inheritParams chains_gibbs_sampling_lbm_cov_poisson
 #' @inheritDotParams gibbs_sampling_lbm_cov_poisson_mixed_membership
 #'
 #' @return A list of length `nchains` where each element is the output
 #'   of a single call to [gibbs_sampling_lbm_cov_poisson_mixed_membership()].
 #' @export
-chains_gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(nchains, auto_save_path = tempfile("lbmsoft_poisson_"), ...) {
+chains_gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(nchains, auto_save_path = tempfile("lbmsoft_poisson_"), verbose = getOption("latentcov.sbm.verbose", default = FALSE), ...) {
   if (verbose) {
     cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
   }
