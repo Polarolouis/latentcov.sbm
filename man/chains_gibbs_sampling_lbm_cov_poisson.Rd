@@ -28,12 +28,12 @@ Defaults to the value of \code{option("latentcov.sbm.verbose")}.}
 latent effects.}
     \item{\code{Y}}{Non-negative integer matrix of observed
 counts.}
-    \item{\code{init_Z}}{Initial row-membership indicator
-matrix (\code{nrow(Y)} x \code{K}).}
-    \item{\code{init_W}}{Initial column-membership indicator
-matrix (\code{ncol(Y)} x \code{R}).}
     \item{\code{K}}{Number of row groups.}
     \item{\code{R}}{Number of column groups.}
+    \item{\code{init_Z}}{Initial row-membership indicator
+matrix (\code{nrow(Y)} x \code{K}). Defaults to NULL.}
+    \item{\code{init_W}}{Initial column-membership indicator
+matrix (\code{ncol(Y)} x \code{R}). Defaults to NULL.}
     \item{\code{niter}}{Number of Gibbs iterations.}
     \item{\code{niter_metropolis}}{Number of Metropolis updates
 per row for \code{P}.}

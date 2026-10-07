@@ -214,12 +214,12 @@ gibbs_sampling_lbm_poisson <- function(
 #' latent effects.
 #' @param Y Non-negative integer matrix of observed
 #' counts.
-#' @param init_Z Initial row-membership indicator
-#' matrix (`nrow(Y)` x `K`).
-#' @param init_W Initial column-membership indicator
-#' matrix (`ncol(Y)` x `R`).
 #' @param K Number of row groups.
 #' @param R Number of column groups.
+#' @param init_Z Initial row-membership indicator
+#' matrix (`nrow(Y)` x `K`). Defaults to NULL.
+#' @param init_W Initial column-membership indicator
+#' matrix (`ncol(Y)` x `R`). Defaults to NULL.
 #' @param niter Number of Gibbs iterations.
 #' @param niter_metropolis Number of Metropolis updates
 #' per row for `P`.
@@ -254,7 +254,7 @@ gibbs_sampling_lbm_poisson <- function(
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
 #' @export
 gibbs_sampling_lbm_cov_poisson <- function(
-  Sigma, Y, init_Z, init_W, K, R,
+  Sigma, Y, K, R, init_Z=NULL, init_W=NULL,
   niter = 50L, niter_metropolis = 1L,
   priors_hyper_params = list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), a0 = 1, b0 = 1),
   rho = 1,

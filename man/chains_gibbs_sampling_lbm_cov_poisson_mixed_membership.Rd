@@ -31,10 +31,10 @@ initialized from \code{ilrInv(current_P)}.}
 latent effects.}
     \item{\code{Y}}{Non-negative integer matrix of observed
 counts.}
-    \item{\code{init_W}}{Initial column-membership indicator
-matrix (\code{ncol(Y)} x \code{R}).}
     \item{\code{K}}{Number of row groups.}
     \item{\code{R}}{Number of column groups.}
+    \item{\code{init_W}}{Initial column-membership indicator
+matrix (\code{ncol(Y)} x \code{R}). Defaults to NULL.}
     \item{\code{niter}}{Number of Gibbs iterations.}
     \item{\code{niter_metropolis}}{Number of Metropolis updates
 per row for \code{P}.}

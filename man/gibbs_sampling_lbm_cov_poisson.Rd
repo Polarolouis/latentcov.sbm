@@ -7,10 +7,10 @@
 gibbs_sampling_lbm_cov_poisson(
   Sigma,
   Y,
-  init_Z,
-  init_W,
   K,
   R,
+  init_Z = NULL,
+  init_W = NULL,
   niter = 50L,
   niter_metropolis = 1L,
   priors_hyper_params = list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), a0 = 1, b0 =
@@ -36,15 +36,15 @@ latent effects.}
 \item{Y}{Non-negative integer matrix of observed
 counts.}
 
-\item{init_Z}{Initial row-membership indicator
-matrix (\code{nrow(Y)} x \code{K}).}
-
-\item{init_W}{Initial column-membership indicator
-matrix (\code{ncol(Y)} x \code{R}).}
-
 \item{K}{Number of row groups.}
 
 \item{R}{Number of column groups.}
+
+\item{init_Z}{Initial row-membership indicator
+matrix (\code{nrow(Y)} x \code{K}). Defaults to NULL.}
+
+\item{init_W}{Initial column-membership indicator
+matrix (\code{ncol(Y)} x \code{R}). Defaults to NULL.}
 
 \item{niter}{Number of Gibbs iterations.}
 

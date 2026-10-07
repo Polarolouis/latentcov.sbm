@@ -40,7 +40,7 @@ counts.}
 initialized from \code{ilrInv(current_P)}.}
 
 \item{init_W}{Initial column-membership indicator
-matrix (\code{ncol(Y)} x \code{R}).}
+matrix (\code{ncol(Y)} x \code{R}). Defaults to NULL.}
 
 \item{K}{Number of row groups.}
 
