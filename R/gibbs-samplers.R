@@ -254,7 +254,7 @@ gibbs_sampling_lbm_poisson <- function(
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
 #' @export
 gibbs_sampling_lbm_cov_poisson <- function(
-  Sigma, Y, K, R, init_Z=NULL, init_W=NULL,
+  Sigma, Y, K, R, init_Z = NULL, init_W = NULL,
   niter = 50L, niter_metropolis = 1L,
   priors_hyper_params = list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), a0 = 1, b0 = 1),
   rho = 1,
@@ -616,7 +616,7 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
 #' @param auto_save_path the base name from which each chain will be
 #' named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
 #' the end. Defaults to
-#' @param verbose a boolean indicating if the function should print messages. 
+#' @param verbose a boolean indicating if the function should print messages.
 #' Defaults to the value of \code{option("latentcov.sbm.verbose")}.
 #' @inheritDotParams gibbs_sampling_lbm_poisson
 #'
