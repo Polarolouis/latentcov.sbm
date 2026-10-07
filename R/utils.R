@@ -765,7 +765,7 @@ compute_pi_from_P <- function(draws, transformation = ilrInv) {
 #'
 #' @param draws a Stan draw object containing all the \code{Z[i]} from which to
 #' compute the \eqn{\hat{\pi}}
-#'
+#' @export
 #' @return a Stan draw object with the new meanpi variables added
 compute_meanpi <- function(draws) {
   Z_draws <- posterior::subset_draws(draws, variable = "Z")
