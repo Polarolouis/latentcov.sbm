@@ -49,3 +49,9 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+      - name: Show install log
+        if: always()
+        shell: bash
+        run: |
+          cat check/latentcov.sbm.Rcheck/00install.out
