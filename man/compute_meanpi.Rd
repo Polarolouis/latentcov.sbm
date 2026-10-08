@@ -9,7 +9,7 @@ compute_meanpi(draws)
 }
 \arguments{
 \item{draws}{a Stan draw object containing all the \code{Z[i]} from which to
-compute the \eqn{\hat{\pi}}}
+compute the \eqn{\bar{\hat{\pi}}}}
 }
 \value{
 a Stan draw object with the new meanpi variables added
