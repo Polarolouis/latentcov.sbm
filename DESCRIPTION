@@ -31,3 +31,5 @@ Imports:
     progressr,
     Rcpp,
     rlang
+Depends:
+    R (>= 4.1.0)
