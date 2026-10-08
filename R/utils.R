@@ -97,11 +97,11 @@ build_covariance_matrix <- function(draws, n, K, corr = FALSE) {
   P_mean <- apply(P_array, c(1, 2, 4), mean)
   if (corr) {
     out <- simplify2array(lapply(seq_len(dim(P_mean)[3]), function(c) {
-      cor(t(P_mean[,, c]))
+      cor(t(P_mean[, , c]))
     }))
   } else {
     out <- simplify2array(lapply(seq_len(dim(P_mean)[3]), function(c) {
-      cov(t(P_mean[,, c]))
+      cov(t(P_mean[, , c]))
     }))
   }
 
@@ -404,7 +404,7 @@ delabel_switch_stan <- function(
     ## rho
 
     rho_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "rho"))
-    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][,,
+    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][, ,
       col_perm,
       drop = FALSE
     ]
@@ -412,10 +412,11 @@ delabel_switch_stan <- function(
     ##  meanpi (if they exists)
     meanpi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "meanpi"))
     if (length(meanpi_idx) > 0) {
-      draws_delabeled[, chain_idx, meanpi_idx] <- draws[,
+      draws_delabeled[, chain_idx, meanpi_idx] <- draws[
+        ,
         chain_idx,
         meanpi_idx
-      ][,, row_perm, drop = FALSE]
+      ][, , row_perm, drop = FALSE]
     }
 
     ## P
@@ -475,7 +476,7 @@ delabel_switch_stan_true <- function(
   start_alpha_var <- head(var_idx_alphas, 1)
   end_alpha_var <- tail(var_idx_alphas, 1)
 
-  mean_alphas_array <- apply(draws[,, var_idx_alphas], 2:3, mean)
+  mean_alphas_array <- apply(draws[, , var_idx_alphas], 2:3, mean)
 
   alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) {
     matrix(mean_alphas_array[row, ], nrow = K, ncol = R)
@@ -518,7 +519,7 @@ delabel_switch_stan_true <- function(
     ## rho
 
     rho_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "rho"))
-    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][,,
+    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][, ,
       col_perm,
       drop = FALSE
     ]
@@ -526,7 +527,7 @@ delabel_switch_stan_true <- function(
     ##  pi (if they exists)
     pi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "pi"))
     if (length(pi_idx) > 0) {
-      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][,,
+      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][, ,
         row_perm,
         drop = FALSE
       ]
@@ -589,7 +590,7 @@ delabel_switch_stan_per_iteration <- function(
   start_alpha_var <- head(var_idx_alphas, 1)
   end_alpha_var <- tail(var_idx_alphas, 1)
 
-  mean_alphas_array <- apply(draws[,, var_idx_alphas], 2:3, mean)
+  mean_alphas_array <- apply(draws[, , var_idx_alphas], 2:3, mean)
 
   alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) {
     matrix(mean_alphas_array[row, ], nrow = K, ncol = R)
@@ -633,7 +634,7 @@ delabel_switch_stan_per_iteration <- function(
     ## rho
 
     rho_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "rho"))
-    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][,,
+    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][, ,
       col_perm,
       drop = FALSE
     ]
@@ -641,7 +642,7 @@ delabel_switch_stan_per_iteration <- function(
     ##  pi (if they exists)
     pi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "pi"))
     if (length(pi_idx) > 0) {
-      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][,,
+      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][, ,
         row_perm,
         drop = FALSE
       ]
@@ -910,7 +911,7 @@ compute_pi_from_P <- function(draws, transformation = ilrInv) {
           cols <- P_names[i_vals == i]
           cols <- cols[order(k_vals[i_vals == i])]
 
-          pi_i_chain_matrix <- current_P_chain[,, cols] |>
+          pi_i_chain_matrix <- current_P_chain[, , cols] |>
             matrix(ncol = K - 1) |>
             ilrInv()
 
@@ -941,7 +942,10 @@ compute_pi_from_P <- function(draws, transformation = ilrInv) {
 #' @return a Stan draw object with the new meanpi variables added
 compute_meanpi <- function(draws) {
   Z_draws <- posterior::subset_draws(draws, variable = "Z")
-  Z_levels <- Z_draws |> as.vector() |> unique() |> sort()
+  Z_levels <- Z_draws |>
+    as.vector() |>
+    unique() |>
+    sort()
   meanpi_draws <- Z_draws |>
     apply(c(1, 2), function(x) {
       as.vector(prop.table(table(factor(
