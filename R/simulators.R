@@ -9,8 +9,13 @@
 #' @return A list containing Z, P, and probs
 #' @importFrom stats rmultinom
 #' @noRd
-simulate_P_and_Z <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
-  lifecycle::deprecate_soft(when = "0.0.9000", what = "simulate_P_and_Z()", details = "Please prefer simulate_P() and simulate_Z_from_P(), as the latter allows to control the applied transformation.")
+simulate_P_and_Z <- function(
+  K,
+  Sigma,
+  sigma2,
+  M = matrix(0, nrow(Sigma), K - 1)
+) {
+  # lifecycle::deprecate_soft(when = "0.0.9000", what = "simulate_P_and_Z()", details = "Please prefer simulate_P() and simulate_Z_from_P(), as the latter allows to control the applied transformation.")
   P <- simulate_P(K, Sigma, sigma2, M)
   probs <- ilrInv(P)
   Z <- simulate_Z_from_P(P)
@@ -30,14 +35,22 @@ simulate_P_and_Z <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)
 simulate_P <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
   # ---- Guard rails ---------------------------------------------------------
 
-  if (!is.numeric(K) || length(K) != 1L || is.na(K) || K != round(K) || K < 2L) {
+  if (
+    !is.numeric(K) || length(K) != 1L || is.na(K) || K != round(K) || K < 2L
+  ) {
     cli::cli_abort(c(
       "x" = "`K` must be a single integer larger or equal to 2 (the number of row clusters).",
       "i" = "You provided {.val {K}}."
     ))
   }
 
-  if (!is.numeric(sigma2) || length(sigma2) != 1L || is.na(sigma2) || !is.finite(sigma2) || sigma2 <= 0) {
+  if (
+    !is.numeric(sigma2) ||
+      length(sigma2) != 1L ||
+      is.na(sigma2) ||
+      !is.finite(sigma2) ||
+      sigma2 <= 0
+  ) {
     cli::cli_abort(c(
       "x" = "`sigma2` must be a single strictly positive scalar (the variance of the latent coordinates).",
       "i" = "You provided {.val {sigma2}}."
@@ -129,7 +142,10 @@ simulate_Z_from_P <- function(P, transformation = ilrInvcpp) {
   probs <- ilrInvcpp(P)
   K <- ncol(probs)
   Z <- sapply(seq_len(nrow(probs)), function(i) {
-    factor(sample.int(n = K, size = 1, replace = TRUE, prob = probs[i, ]), levels = seq(K))
+    factor(
+      sample.int(n = K, size = 1, replace = TRUE, prob = probs[i, ]),
+      levels = seq(K)
+    )
   })
   return(Z)
 }
