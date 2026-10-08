@@ -76,7 +76,7 @@ arma::mat sample_P_metropolis_classical_cpp(arma::mat &P, arma::mat &Z,
       double log_u = log(Rcpp::runif(1)(0));
 
       arma::uvec Zi_vec = find(Z.row(indiv_idx) == 1, 1, "first");
-      uint Zi = Zi_vec(0);
+      arma::uword Zi = Zi_vec(0);
 
       if (DEBUG_SAMPLE) {
         Rcpp::Rcout << "Z_" << indiv_idx + 1 << " = " << Zi + 1 << std::endl;
@@ -183,7 +183,7 @@ arma::mat sample_P_metropolis_trick_cpp(arma::mat &P, arma::mat &Z,
       double log_u = log(Rcpp::runif(1)(0));
 
       arma::uvec Zi_vec = find(Z.row(indiv_idx) == 1, 1, "first");
-      uint Zi = Zi_vec(0);
+      arma::uword Zi = Zi_vec(0);
 
       double log_accept = ilrInv_cpp(Pi_candidate, basis, true)(Zi) -
                           ilrInv_cpp(Pi_old, basis, true)(Zi);
@@ -297,7 +297,7 @@ arma::mat sample_P_metropolis_trick_cpp_block(arma::mat &P, arma::mat &Z,
         arma::rowvec Pi_candidate = new_P_block.row(i);
 
         arma::uvec Zi_vec = find(Z.row(indiv_idx) == 1, 1, "first");
-        uint Zi = Zi_vec(0);
+        arma::uword Zi = Zi_vec(0);
 
         double log_accept_single = ilrInv_cpp(Pi_candidate, basis, true)(Zi) -
                                    ilrInv_cpp(Pi_old, basis, true)(Zi);
