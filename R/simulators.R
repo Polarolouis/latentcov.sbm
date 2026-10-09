@@ -139,7 +139,7 @@ simulate_P <- function(K, Sigma, sigma2, M = matrix(0, nrow(Sigma), K - 1)) {
 #' @return A factor with the Z assignments
 #' @export
 simulate_Z_from_P <- function(P, transformation = ilrInvcpp) {
-  probs <- ilrInvcpp(P)
+  probs <- transformation(P)
   K <- ncol(probs)
   Z <- sapply(seq_len(nrow(probs)), function(i) {
     factor(
