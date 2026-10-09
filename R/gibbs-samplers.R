@@ -625,8 +625,8 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
       alpha_shape <- a0 + t(Z_post_probs) %*% Y %*% W
       alpha_rate <- b0 +
         t(Z_post_probs) %*%
-          matrix(1, nrow = nrow(Z_post_probs), ncol = nrow(W)) %*%
-          W
+        matrix(1, nrow = nrow(Z_post_probs), ncol = nrow(W)) %*%
+        W
       current_alpha <- sample_alpha_given_Y_Z_W_poisson(
         shape = alpha_shape,
         rate = alpha_rate
@@ -681,8 +681,8 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
         log(current_rho) +
         R_Z_soft %*% log(current_alpha) -
         matrix(1, nrow = ncol(Y), ncol = ncol(Z_post_probs)) %*%
-          N_Z_soft %*%
-          current_alpha
+        N_Z_soft %*%
+        current_alpha
       W_post_probs <- row_normalize_matrix(W_unormalized_log_probs, tol = tol)
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
