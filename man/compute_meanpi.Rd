@@ -5,11 +5,14 @@
 \title{A function to compute a posteriori the mean \eqn{\hat{\pi}} from
 \eqn{\hat{Z}} at each iteration}
 \usage{
-compute_meanpi(draws)
+compute_meanpi(draws, K = NULL)
 }
 \arguments{
 \item{draws}{a Stan draw object containing all the \code{Z[i]} from which to
 compute the \eqn{\bar{\hat{\pi}}}}
+
+\item{K}{Optional integer specifying the expected number of labels for row
+groups.}
 }
 \value{
 a Stan draw object with the new meanpi variables added
