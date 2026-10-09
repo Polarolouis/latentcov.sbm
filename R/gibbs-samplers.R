@@ -456,9 +456,21 @@ gibbs_sampling_lbm_cov_poisson <- function(
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_post_probs_array`, `rho_array`, `alpha_array`.
 #' @export
 gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
-  Sigma, Y, init_Z, init_W, K, R,
-  niter = 50L, niter_metropolis = 1L,
-  priors_hyper_params = list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), a0 = 1, b0 = 1),
+  Sigma,
+  Y,
+  init_Z,
+  init_W,
+  K,
+  R,
+  niter = 50L,
+  niter_metropolis = 1L,
+  priors_hyper_params = list(
+    alpha_0 = 1,
+    beta_0 = 1,
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
   rho = 1,
   sigma2_fixed = TRUE,
   known_alpha = NULL,
@@ -474,22 +486,69 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
   if (verbose) {
-    cli::cli_inform("The state of the chain will be saved to {.file {auto_save_path}} at each iteration")
+    cli::cli_inform(
+      "The state of the chain will be saved to {.file {auto_save_path}} at each iteration"
+    )
   }
   # Initialize the whole arrays of variables
-  sigma2_array <- array(NA, dim = c(niter, 1), dimnames = list("Iteration" = seq(niter), "Parameter" = "sigma2"))
+  sigma2_array <- array(
+    NA,
+    dim = c(niter, 1),
+    dimnames = list("Iteration" = seq(niter), "Parameter" = "sigma2")
+  )
 
-  P_array <- array(NA, dim = c(niter, nrow(Y), K - 1), dimnames = list("Iteration" = seq(niter), "Individual" = paste0("P", seq_len(nrow(Y))), "Coordinates" = seq(1, K - 1)))
+  P_array <- array(
+    NA,
+    dim = c(niter, nrow(Y), K - 1),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Individual" = paste0("P", seq_len(nrow(Y))),
+      "Coordinates" = seq(1, K - 1)
+    )
+  )
 
-  rho_array <- array(NA, dim = c(niter, R), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("rho.", seq(1, R))))
+  rho_array <- array(
+    NA,
+    dim = c(niter, R),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("rho.", seq(1, R))
+    )
+  )
 
-  alpha_array <- array(NA, dim = c(niter, K, R), dimnames = list("Iteration" = seq(niter), "RowGroup" = paste0("RowGroup", seq(1, K)), "ColGroup" = paste0("ColGroup", seq(1, R))))
+  alpha_array <- array(
+    NA,
+    dim = c(niter, K, R),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "RowGroup" = paste0("RowGroup", seq(1, K)),
+      "ColGroup" = paste0("ColGroup", seq(1, R))
+    )
+  )
 
-  Z_post_probs_array <- array(NA, dim = c(niter, nrow(Y), K), dimnames = list("Iteration" = seq(niter), "Individual" = paste0("Zpp.", seq_len(nrow(Y))), "RowGroup" = paste0("RowGroup", seq(1, K))))
+  Z_post_probs_array <- array(
+    NA,
+    dim = c(niter, nrow(Y), K),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Individual" = paste0("Zpp.", seq_len(nrow(Y))),
+      "RowGroup" = paste0("RowGroup", seq(1, K))
+    )
+  )
 
-  W_array <- array(NA, dim = c(niter, ncol(Y)), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("W.", seq_len(ncol(Y)))))
+  W_array <- array(
+    NA,
+    dim = c(niter, ncol(Y)),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("W.", seq_len(ncol(Y)))
+    )
+  )
 
   # Initialization
+  prov_Y <- Y
+  mask <- (!is.na(Y)) * 1L
+  Y <- replace(Y, is.na(Y), 0)
   Theta <- solve(Sigma)
 
   ## Hyperparameters
@@ -508,8 +567,11 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   if (is.null(init_W)) {
     current_rho <- as.vector(MCMCpack::rdirichlet(n = 1, alpha = gammas_0))
     W <- sapply(seq_len(ncol(Y)), function(j) {
-      (seq(R) == sample.int(n = R, size = 1, replace = TRUE, prob = current_rho)) * 1
-    }) |> t()
+      (seq(R) ==
+        sample.int(n = R, size = 1, replace = TRUE, prob = current_rho)) *
+        1
+    }) |>
+      t()
   } else {
     W <- init_W
   }
@@ -525,8 +587,15 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   }
 
   ### P
-  current_P <- t(mvtnorm::rmvnorm(n = K - 1, mean = rep(0, nrow(Sigma)), sigma = current_sigma2 * Sigma))
-  dimnames(current_P) <- list("Individual" = paste0("P", seq_len(nrow(Y))), "Coordinates" = seq(1, K - 1))
+  current_P <- t(mvtnorm::rmvnorm(
+    n = K - 1,
+    mean = rep(0, nrow(Sigma)),
+    sigma = current_sigma2 * Sigma
+  ))
+  dimnames(current_P) <- list(
+    "Individual" = paste0("P", seq_len(nrow(Y))),
+    "Coordinates" = seq(1, K - 1)
+  )
 
   ### Z_post_probs (soft memberships)
   if (is.null(init_Z)) {
@@ -541,7 +610,11 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
     if (iter %% 10 == 0) {
       message(prefix, "Iter : ", iter, " on ", niter)
     }
-    pb(sprintf("%sIter : %d on %d", prefix, iter, niter), class = if (iter %% 10 == 0) "sticky", amount = 0)
+    pb(
+      sprintf("%sIter : %d on %d", prefix, iter, niter),
+      class = if (iter %% 10 == 0) "sticky",
+      amount = 0
+    )
     ### rho | W
     current_gammas <- param_rho_given_W(gammas = gammas_0, W)
     current_rho <- sample_rho_given_W(gammas_post = current_gammas)
@@ -550,8 +623,14 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
     ### alpha | Y, Z_post_probs, W  (soft sufficient statistics)
     if (is.null(known_alpha)) {
       alpha_shape <- a0 + t(Z_post_probs) %*% Y %*% W
-      alpha_rate <- b0 + t(Z_post_probs) %*% matrix(1, nrow = nrow(Z_post_probs), ncol = nrow(W)) %*% W
-      current_alpha <- sample_alpha_given_Y_Z_W_poisson(shape = alpha_shape, rate = alpha_rate)
+      alpha_rate <- b0 +
+        t(Z_post_probs) %*%
+          matrix(1, nrow = nrow(Z_post_probs), ncol = nrow(W)) %*%
+          W
+      current_alpha <- sample_alpha_given_Y_Z_W_poisson(
+        shape = alpha_shape,
+        rate = alpha_rate
+      )
     } else {
       current_alpha <- known_alpha
     }
@@ -560,7 +639,15 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
 
     ### P | sigma2, Z_post_probs (soft membership likelihood)
     if (is.null(known_P)) {
-      current_P <- P_sampler(P = current_P, Z = Z_post_probs, Sigma = Sigma, sigma2 = current_sigma2, minibatch = minibatch, niter_metropolis = niter_metropolis, rho = rho)
+      current_P <- P_sampler(
+        P = current_P,
+        Z = Z_post_probs,
+        Sigma = Sigma,
+        sigma2 = current_sigma2,
+        minibatch = minibatch,
+        niter_metropolis = niter_metropolis,
+        rho = rho
+      )
     } else {
       current_P <- known_P
     }
@@ -568,8 +655,16 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
 
     ### sigma2 | P (not running currently)
     if (!sigma2_fixed) {
-      sigma2_post_params <- param_sigma2_given_P(alpha_0 = alpha_0, beta_0, P = current_P, Theta = Theta)
-      current_sigma2 <- sample_sigma2_given_P(shape = sigma2_post_params[["alpha"]], rate = sigma2_post_params[["beta"]])
+      sigma2_post_params <- param_sigma2_given_P(
+        alpha_0 = alpha_0,
+        beta_0,
+        P = current_P,
+        Theta = Theta
+      )
+      current_sigma2 <- sample_sigma2_given_P(
+        shape = sigma2_post_params[["alpha"]],
+        rate = sigma2_post_params[["beta"]]
+      )
     } else if (is.numeric(sigma2_fixed)) {
       current_sigma2 <- sigma2_fixed
     } else {
@@ -582,7 +677,12 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
     if (is.null(known_W)) {
       R_Z_soft <- t(Y) %*% Z_post_probs
       N_Z_soft <- diag(colSums(Z_post_probs))
-      W_unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*% log(current_rho) + R_Z_soft %*% log(current_alpha) - matrix(1, nrow = ncol(Y), ncol = ncol(Z_post_probs)) %*% N_Z_soft %*% current_alpha
+      W_unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*%
+        log(current_rho) +
+        R_Z_soft %*% log(current_alpha) -
+        matrix(1, nrow = ncol(Y), ncol = ncol(Z_post_probs)) %*%
+          N_Z_soft %*%
+          current_alpha
       W_post_probs <- row_normalize_matrix(W_unormalized_log_probs, tol = tol)
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
@@ -594,10 +694,26 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
     W_array[iter, ] <- current_W_memb
 
     ### Z_post_probs | P, W, Y, alpha (kept soft, no hard draw)
-    Z_post_probs <- param_multinom_probs_Z_cov_poisson(Y = Y, alpha = current_alpha, W = W, P = current_P, tol = tol)
+    Z_post_probs <- param_multinom_probs_Z_cov_poisson(
+      Y = Y,
+      alpha = current_alpha,
+      W = W,
+      mask = mask,
+      P = current_P,
+      tol = tol
+    )
     Z_post_probs_array[iter, , ] <- Z_post_probs
-    out_list <- list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_post_probs_array = Z_post_probs_array, rho_array = rho_array, alpha_array = alpha_array)
-    out_array <- posterior::as_draws_array(list_arrays_to_stan(array_list = out_list))
+    out_list <- list(
+      sigma2_array = sigma2_array,
+      P_array = P_array,
+      W_array = W_array,
+      Z_post_probs_array = Z_post_probs_array,
+      rho_array = rho_array,
+      alpha_array = alpha_array
+    )
+    out_array <- posterior::as_draws_array(list_arrays_to_stan(
+      array_list = out_list
+    ))
     if (iter %% 100 == 0) {
       auto_save(object = out_array, path = auto_save_path, verbose = verbose)
     }
