@@ -62,6 +62,8 @@ variable. Default to sample_P_metropolis_trick}
 indicating the known columns block memberships}
     \item{\code{known_W}}{NULL (default) or a matrix (\eqn{n_2\times R})
 indicating the known columns block memberships}
+    \item{\code{known_rho}}{NULL (default) or a vectior (\eqn{R}) indicating the block
+a priori proportions}
   }}
 }
 \value{

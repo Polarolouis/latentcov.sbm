@@ -20,6 +20,7 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership(
   known_alpha = NULL,
   known_P = NULL,
   known_W = NULL,
+  known_rho = NULL,
   P_sampler = sample_P_metropolis_trick_soft,
   minibatch = TRUE,
   tol = TOL,
@@ -67,6 +68,9 @@ per row for \code{P}.}
 
 \item{known_W}{NULL (default) or a matrix (\eqn{n_2\times R})
 indicating the known columns block memberships}
+
+\item{known_rho}{NULL (default) or a vectior (\eqn{R}) indicating the block
+a priori proportions}
 
 \item{P_sampler}{a function indicating the sampler to use for the P
 variable. Default to sample_P_metropolis_trick}

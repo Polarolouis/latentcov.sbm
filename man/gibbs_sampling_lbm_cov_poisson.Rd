@@ -21,6 +21,7 @@ gibbs_sampling_lbm_cov_poisson(
   known_P = NULL,
   known_W = NULL,
   known_Z = NULL,
+  known_rho = NULL,
   P_sampler = sample_P_metropolis_trick_cpp,
   minibatch = TRUE,
   tol = TOL,
@@ -70,6 +71,9 @@ indicating the known columns block memberships}
 
 \item{known_Z}{NULL (default) or a matrix (\eqn{n_1\times K})
 indicating the known columns block memberships}
+
+\item{known_rho}{NULL (default) or a vectior (\eqn{R}) indicating the block
+a priori proportions}
 
 \item{P_sampler}{a function indicating the sampler to use for the P
 variable. Default to sample_P_metropolis_trick}
