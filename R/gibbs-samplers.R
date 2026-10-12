@@ -48,12 +48,15 @@
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
 #' @export
 gibbs_sampling_lbm_poisson <- function(
-  Y, K, R,
+  Y,
+  K,
+  R,
   niter = 50L,
   priors_hyper_params = list(
     etas_0 = rep(2, K),
     gammas_0 = rep(2, R),
-    a0 = 1, b0 = 1
+    a0 = 1,
+    b0 = 1
   ),
   rho = 1,
   init_Z = NULL,
@@ -72,7 +75,9 @@ gibbs_sampling_lbm_poisson <- function(
   invisible(c(TOL))
 
   if (verbose) {
-    cli::cli_inform("The state of the chain will be saved to {.file {auto_save_path}} at each iteration")
+    cli::cli_inform(
+      "The state of the chain will be saved to {.file {auto_save_path}} at each iteration"
+    )
   }
 
   prov_Y <- Y
@@ -80,15 +85,51 @@ gibbs_sampling_lbm_poisson <- function(
   Y <- replace(Y, is.na(Y), 0)
 
   # Initialize the whole arrays of variables
-  rho_array <- array(NA, dim = c(niter, R), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("rho.", seq(1, R))))
+  rho_array <- array(
+    NA,
+    dim = c(niter, R),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("rho.", seq(1, R))
+    )
+  )
 
-  pi_array <- array(NA, dim = c(niter, K), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("pi.", seq(1, K))))
+  pi_array <- array(
+    NA,
+    dim = c(niter, K),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("pi.", seq(1, K))
+    )
+  )
 
-  alpha_array <- array(NA, dim = c(niter, K, R), dimnames = list("Iteration" = seq(niter), "RowGroup" = paste0("RowGroup", seq(1, K)), "ColGroup" = paste0("ColGroup", seq(1, R))))
+  alpha_array <- array(
+    NA,
+    dim = c(niter, K, R),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "RowGroup" = paste0("RowGroup", seq(1, K)),
+      "ColGroup" = paste0("ColGroup", seq(1, R))
+    )
+  )
 
-  Z_array <- array(NA, dim = c(niter, nrow(Y)), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("Z.", seq_len(nrow(Y)))))
+  Z_array <- array(
+    NA,
+    dim = c(niter, nrow(Y)),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("Z.", seq_len(nrow(Y)))
+    )
+  )
 
-  W_array <- array(NA, dim = c(niter, ncol(Y)), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("W.", seq_len(ncol(Y)))))
+  W_array <- array(
+    NA,
+    dim = c(niter, ncol(Y)),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("W.", seq_len(ncol(Y)))
+    )
+  )
 
   # Initialization
   ## Hyperparameters
@@ -109,7 +150,10 @@ gibbs_sampling_lbm_poisson <- function(
       col_order <- order(current_rho, decreasing = TRUE)
       current_rho <- current_rho[col_order]
     }
-    W <- t(sapply(sample.int(n = R, size = ncol(Y), prob = current_rho, replace = TRUE), function(W_label) as.integer(seq(R) == W_label)))
+    W <- t(sapply(
+      sample.int(n = R, size = ncol(Y), prob = current_rho, replace = TRUE),
+      function(W_label) as.integer(seq(R) == W_label)
+    ))
   } else {
     W <- init_W
   }
@@ -121,7 +165,10 @@ gibbs_sampling_lbm_poisson <- function(
       row_order <- order(current_pi, decreasing = TRUE)
       current_pi <- current_pi[row_order]
     }
-    Z <- t(sapply(sample.int(n = K, size = nrow(Y), prob = current_pi, replace = TRUE), function(Z_label) as.integer(seq(K) == Z_label)))
+    Z <- t(sapply(
+      sample.int(n = K, size = nrow(Y), prob = current_pi, replace = TRUE),
+      function(Z_label) as.integer(seq(K) == Z_label)
+    ))
   } else {
     Z <- init_Z
   }
@@ -132,7 +179,11 @@ gibbs_sampling_lbm_poisson <- function(
     if (iter %% 10 == 0) {
       message(prefix, "Iter : ", iter, " on ", niter)
     }
-    pb(sprintf("%sIter : %d on %d", prefix, iter, niter), class = if (iter %% 10 == 0) "sticky", amount = 0)
+    pb(
+      sprintf("%sIter : %d on %d", prefix, iter, niter),
+      class = if (iter %% 10 == 0) "sticky",
+      amount = 0
+    )
     ### rho | W
     current_gammas <- param_rho_given_W(gammas = gammas_0, W)
     current_rho <- sample_rho_given_W(gammas_post = current_gammas)
@@ -159,21 +210,37 @@ gibbs_sampling_lbm_poisson <- function(
 
     ### alpha | Y, Z, W
     if (is.null(known_alpha)) {
-      alpha_params <- param_alpha_given_Y_Z_W_poisson(a0 = a0, b0 = b0, Y = Y, Z = Z, W = W, mask = mask)
-      current_alpha <- sample_alpha_given_Y_Z_W_poisson(shape = alpha_params[["shape"]], rate = alpha_params[["rate"]])
+      alpha_params <- param_alpha_given_Y_Z_W_poisson(
+        a0 = a0,
+        b0 = b0,
+        Y = Y,
+        Z = Z,
+        W = W,
+        mask = mask
+      )
+      current_alpha <- sample_alpha_given_Y_Z_W_poisson(
+        shape = alpha_params[["shape"]],
+        rate = alpha_params[["rate"]]
+      )
     } else {
       current_alpha <- known_alpha
     }
 
     alpha_array[iter, , ] <- current_alpha
 
-
     ### W | Z,Y,rho,alpha
     if (is.null(known_W)) {
-      W_post_probs <- param_multinom_probs_W_poisson(Y, current_alpha, Z, rho = current_rho, mask = mask, tol = tol)
+      W_post_probs <- param_multinom_probs_W_poisson(
+        Y,
+        current_alpha,
+        Z,
+        rho = current_rho,
+        mask = mask,
+        tol = tol
+      )
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
-      current_W_memb <- known_W
+      current_W_memb <- known_membership_to_labels(known_W)
     }
     W <- t(sapply(current_W_memb, function(W_label) {
       (seq(R) == W_label) * 1
@@ -182,18 +249,33 @@ gibbs_sampling_lbm_poisson <- function(
 
     ### Z | pi,W,Y,alpha
     if (is.null(known_Z)) {
-      Z_post_probs <- param_multinom_probs_Z_poisson(Y = Y, alpha = current_alpha, W = W, pi = current_pi, mask = mask, tol = tol)
+      Z_post_probs <- param_multinom_probs_Z_poisson(
+        Y = Y,
+        alpha = current_alpha,
+        W = W,
+        pi = current_pi,
+        mask = mask,
+        tol = tol
+      )
       current_Z_memb <- sample_Z_given_alpha_P_Y_W(probs = Z_post_probs)
     } else {
-      current_Z_memb <- known_Z
+      current_Z_memb <- known_membership_to_labels(known_Z)
     }
     Z <- t(sapply(current_Z_memb, function(Z_label) {
       (seq(K) == Z_label) * 1
     }))
     Z_array[iter, ] <- current_Z_memb
 
-    out_list <- list(W_array = W_array, Z_array = Z_array, rho_array = rho_array, pi_array = pi_array, alpha_array = alpha_array)
-    out_array <- posterior::as_draws_array(list_arrays_to_stan(array_list = out_list))
+    out_list <- list(
+      W_array = W_array,
+      Z_array = Z_array,
+      rho_array = rho_array,
+      pi_array = pi_array,
+      alpha_array = alpha_array
+    )
+    out_array <- posterior::as_draws_array(list_arrays_to_stan(
+      array_list = out_list
+    ))
     if (iter %% 100 == 0) {
       auto_save(object = out_array, path = auto_save_path, verbose = verbose)
     }
@@ -254,9 +336,21 @@ gibbs_sampling_lbm_poisson <- function(
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
 #' @export
 gibbs_sampling_lbm_cov_poisson <- function(
-  Sigma, Y, K, R, init_Z = NULL, init_W = NULL,
-  niter = 50L, niter_metropolis = 1L,
-  priors_hyper_params = list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), a0 = 1, b0 = 1),
+  Sigma,
+  Y,
+  K,
+  R,
+  init_Z = NULL,
+  init_W = NULL,
+  niter = 50L,
+  niter_metropolis = 1L,
+  priors_hyper_params = list(
+    alpha_0 = 1,
+    beta_0 = 1,
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
   rho = 1,
   sigma2_fixed = TRUE,
   known_alpha = NULL,
@@ -274,7 +368,9 @@ gibbs_sampling_lbm_cov_poisson <- function(
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
 
   if (verbose) {
-    cli::cli_inform("The state of the chain will be saved to {.file {auto_save_path}} at each iteration")
+    cli::cli_inform(
+      "The state of the chain will be saved to {.file {auto_save_path}} at each iteration"
+    )
   }
 
   prov_Y <- Y
@@ -282,17 +378,58 @@ gibbs_sampling_lbm_cov_poisson <- function(
   Y <- replace(Y, is.na(Y), 0)
 
   # Initialize the whole arrays of variables
-  sigma2_array <- array(NA, dim = c(niter, 1), dimnames = list("Iteration" = seq(niter), "Parameter" = "sigma2"))
+  sigma2_array <- array(
+    NA,
+    dim = c(niter, 1),
+    dimnames = list("Iteration" = seq(niter), "Parameter" = "sigma2")
+  )
 
-  P_array <- array(NA, dim = c(niter, nrow(Y), K - 1), dimnames = list("Iteration" = seq(niter), "Individual" = paste0("P", seq_len(nrow(Y))), "Coordinates" = seq(1, K - 1)))
+  P_array <- array(
+    NA,
+    dim = c(niter, nrow(Y), K - 1),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Individual" = paste0("P", seq_len(nrow(Y))),
+      "Coordinates" = seq(1, K - 1)
+    )
+  )
 
-  rho_array <- array(NA, dim = c(niter, R), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("rho.", seq(1, R))))
+  rho_array <- array(
+    NA,
+    dim = c(niter, R),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("rho.", seq(1, R))
+    )
+  )
 
-  alpha_array <- array(NA, dim = c(niter, K, R), dimnames = list("Iteration" = seq(niter), "RowGroup" = paste0("RowGroup", seq(1, K)), "ColGroup" = paste0("ColGroup", seq(1, R))))
+  alpha_array <- array(
+    NA,
+    dim = c(niter, K, R),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "RowGroup" = paste0("RowGroup", seq(1, K)),
+      "ColGroup" = paste0("ColGroup", seq(1, R))
+    )
+  )
 
-  Z_array <- array(NA, dim = c(niter, nrow(Y)), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("Z.", seq_len(nrow(Y)))))
+  Z_array <- array(
+    NA,
+    dim = c(niter, nrow(Y)),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("Z.", seq_len(nrow(Y)))
+    )
+  )
 
-  W_array <- array(NA, dim = c(niter, ncol(Y)), dimnames = list("Iteration" = seq(niter), "Parameter" = paste0("W.", seq_len(ncol(Y)))))
+  W_array <- array(
+    NA,
+    dim = c(niter, ncol(Y)),
+    dimnames = list(
+      "Iteration" = seq(niter),
+      "Parameter" = paste0("W.", seq_len(ncol(Y)))
+    )
+  )
 
   # Initialization
 
@@ -314,12 +451,14 @@ gibbs_sampling_lbm_cov_poisson <- function(
   if (is.null(init_W)) {
     current_rho <- as.vector(MCMCpack::rdirichlet(n = 1, alpha = gammas_0))
     W <- sapply(seq_len(ncol(Y)), function(j) {
-      (seq(R) == sample.int(n = R, size = 1, replace = TRUE, prob = current_rho)) * 1
-    }) |> t()
+      (seq(R) ==
+        sample.int(n = R, size = 1, replace = TRUE, prob = current_rho)) *
+        1
+    }) |>
+      t()
   } else {
     W <- init_W
   }
-
 
   ### sigma2
   if (!sigma2_fixed) {
@@ -332,14 +471,29 @@ gibbs_sampling_lbm_cov_poisson <- function(
   }
 
   ### P
-  current_P <- t(mvtnorm::rmvnorm(n = K - 1, mean = rep(0, nrow(Sigma)), sigma = current_sigma2 * Sigma))
-  dimnames(current_P) <- list("Individual" = paste0("P", seq_len(nrow(Y))), "Coordinates" = seq(1, K - 1))
+  current_P <- t(mvtnorm::rmvnorm(
+    n = K - 1,
+    mean = rep(0, nrow(Sigma)),
+    sigma = current_sigma2 * Sigma
+  ))
+  dimnames(current_P) <- list(
+    "Individual" = paste0("P", seq_len(nrow(Y))),
+    "Coordinates" = seq(1, K - 1)
+  )
 
   ### Z
   if (is.null(init_Z)) {
     Z <- sapply(seq_len(nrow(Y)), function(j) {
-      (seq(K) == sample.int(n = K, size = 1, replace = TRUE, prob = ilrInv(current_P)[j, ])) * 1
-    }) |> t()
+      (seq(K) ==
+        sample.int(
+          n = K,
+          size = 1,
+          replace = TRUE,
+          prob = ilrInv(current_P)[j, ]
+        )) *
+        1
+    }) |>
+      t()
   } else {
     Z <- init_Z
   }
@@ -349,7 +503,11 @@ gibbs_sampling_lbm_cov_poisson <- function(
     if (iter %% 10 == 0) {
       message(prefix, "Iter : ", iter, " on ", niter)
     }
-    pb(sprintf("%sIter : %d on %d", prefix, iter, niter), class = if (iter %% 10 == 0) "sticky", amount = 0)
+    pb(
+      sprintf("%sIter : %d on %d", prefix, iter, niter),
+      class = if (iter %% 10 == 0) "sticky",
+      amount = 0
+    )
     ### rho | W
     current_gammas <- param_rho_given_W(gammas = gammas_0, W)
     current_rho <- sample_rho_given_W(gammas_post = current_gammas)
@@ -357,8 +515,18 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### alpha | Y, Z, W
     if (is.null(known_alpha)) {
-      alpha_params <- param_alpha_given_Y_Z_W_poisson(a0 = a0, b0 = b0, Y = Y, Z = Z, W = W, mask = mask)
-      current_alpha <- sample_alpha_given_Y_Z_W_poisson(shape = alpha_params[["shape"]], rate = alpha_params[["rate"]])
+      alpha_params <- param_alpha_given_Y_Z_W_poisson(
+        a0 = a0,
+        b0 = b0,
+        Y = Y,
+        Z = Z,
+        W = W,
+        mask = mask
+      )
+      current_alpha <- sample_alpha_given_Y_Z_W_poisson(
+        shape = alpha_params[["shape"]],
+        rate = alpha_params[["rate"]]
+      )
     } else {
       current_alpha <- known_alpha
     }
@@ -367,7 +535,15 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### P | sigma2, Z
     if (is.null(known_P)) {
-      current_P <- P_sampler(P = current_P, Z = Z, Sigma = Sigma, sigma2 = current_sigma2, minibatch = minibatch, niter_metropolis = niter_metropolis, rho = rho)
+      current_P <- P_sampler(
+        P = current_P,
+        Z = Z,
+        Sigma = Sigma,
+        sigma2 = current_sigma2,
+        minibatch = minibatch,
+        niter_metropolis = niter_metropolis,
+        rho = rho
+      )
     } else {
       current_P <- known_P
     }
@@ -376,8 +552,16 @@ gibbs_sampling_lbm_cov_poisson <- function(
     ### sigma2 | P (not running currently)
 
     if (!sigma2_fixed) {
-      sigma2_post_params <- param_sigma2_given_P(alpha_0 = alpha_0, beta_0, P = current_P, Theta = Theta)
-      current_sigma2 <- sample_sigma2_given_P(shape = sigma2_post_params[["alpha"]], rate = sigma2_post_params[["beta"]])
+      sigma2_post_params <- param_sigma2_given_P(
+        alpha_0 = alpha_0,
+        beta_0,
+        P = current_P,
+        Theta = Theta
+      )
+      current_sigma2 <- sample_sigma2_given_P(
+        shape = sigma2_post_params[["alpha"]],
+        rate = sigma2_post_params[["beta"]]
+      )
     } else if (is.numeric(sigma2_fixed)) {
       current_sigma2 <- sigma2_fixed
     } else {
@@ -388,10 +572,17 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### W | Z,Y,rho,alpha
     if (is.null(known_W)) {
-      W_post_probs <- param_multinom_probs_W_poisson(Y, current_alpha, Z, rho = current_rho, mask = mask, tol = tol)
+      W_post_probs <- param_multinom_probs_W_poisson(
+        Y,
+        current_alpha,
+        Z,
+        rho = current_rho,
+        mask = mask,
+        tol = tol
+      )
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
-      current_W_memb <- known_W
+      current_W_memb <- known_membership_to_labels(known_W)
     }
     W <- t(sapply(current_W_memb, function(W_label) {
       (seq(R) == W_label) * 1
@@ -400,18 +591,34 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### Z | P,W,Y,alpha
     if (is.null(known_Z)) {
-      Z_post_probs <- param_multinom_probs_Z_cov_poisson(Y = Y, alpha = current_alpha, W = W, P = current_P, mask = mask, tol = tol)
+      Z_post_probs <- param_multinom_probs_Z_cov_poisson(
+        Y = Y,
+        alpha = current_alpha,
+        W = W,
+        P = current_P,
+        mask = mask,
+        tol = tol
+      )
       current_Z_memb <- sample_Z_given_alpha_P_Y_W(probs = Z_post_probs)
     } else {
-      current_Z_memb <- known_Z
+      current_Z_memb <- known_membership_to_labels(known_Z)
     }
     Z <- t(sapply(current_Z_memb, function(Z_label) {
       (seq(K) == Z_label) * 1
     }))
     Z_array[iter, ] <- current_Z_memb
 
-    out_list <- list(sigma2_array = sigma2_array, P_array = P_array, W_array = W_array, Z_array = Z_array, rho_array = rho_array, alpha_array = alpha_array)
-    out_array <- posterior::as_draws_array(list_arrays_to_stan(array_list = out_list))
+    out_list <- list(
+      sigma2_array = sigma2_array,
+      P_array = P_array,
+      W_array = W_array,
+      Z_array = Z_array,
+      rho_array = rho_array,
+      alpha_array = alpha_array
+    )
+    out_array <- posterior::as_draws_array(list_arrays_to_stan(
+      array_list = out_list
+    ))
     if (iter %% 100 == 0) {
       auto_save(object = out_array, path = auto_save_path, verbose = verbose)
     }
@@ -686,7 +893,7 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
       W_post_probs <- row_normalize_matrix(W_unormalized_log_probs, tol = tol)
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
-      current_W_memb <- known_W
+      current_W_memb <- known_membership_to_labels(known_W)
     }
     W <- t(sapply(current_W_memb, function(W_label) {
       (seq(R) == W_label) * 1
@@ -738,16 +945,32 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
 #'
 #' @return A stan draws array with concatenated chains results of[gibbs_sampling_lbm_poisson()].
 #' @export
-chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile("lbm_poisson_"), verbose = getOption("latentcov.sbm.verbose", default = FALSE), ...) {
+chains_gibbs_sampling_lbm_poisson <- function(
+  nchains,
+  auto_save_path = tempfile("lbm_poisson_"),
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
+  ...
+) {
   if (verbose) {
-    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
+    cli::cli_inform(
+      "Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}"
+    )
   }
   out_list <- lapply(seq(nchains), function(i) {
-    gibbs_sampling_lbm_poisson(..., prefix = paste0("Chain ", i, " - "), auto_save_path = paste0(auto_save_path, "_", i, ".Rds"))
-  }) |> futurize::futurize(seed = TRUE)
+    gibbs_sampling_lbm_poisson(
+      ...,
+      prefix = paste0("Chain ", i, " - "),
+      auto_save_path = paste0(auto_save_path, "_", i, ".Rds")
+    )
+  }) |>
+    futurize::futurize(seed = TRUE)
   out_draws <- out_list[[1]]
   for (idx in seq_along(out_list[-1])) {
-    out_draws <- posterior::bind_draws(out_draws, out_list[[idx + 1]], along = "chain")
+    out_draws <- posterior::bind_draws(
+      out_draws,
+      out_list[[idx + 1]],
+      along = "chain"
+    )
   }
   return(out_draws)
 }
@@ -762,16 +985,32 @@ chains_gibbs_sampling_lbm_poisson <- function(nchains, auto_save_path = tempfile
 #'
 #' @return A stan draws array with concatenated chains results of [gibbs_sampling_lbm_cov_poisson()].
 #' @export
-chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, auto_save_path = tempfile("lbmcov_poisson_"), verbose = getOption("latentcov.sbm.verbose", default = FALSE), ...) {
+chains_gibbs_sampling_lbm_cov_poisson <- function(
+  nchains,
+  auto_save_path = tempfile("lbmcov_poisson_"),
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
+  ...
+) {
   if (verbose) {
-    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
+    cli::cli_inform(
+      "Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}"
+    )
   }
   out_list <- lapply(seq(nchains), function(i) {
-    gibbs_sampling_lbm_cov_poisson(..., prefix = paste0("Chain ", i, " - "), auto_save_path = paste0(auto_save_path, "_", i, ".Rds"))
-  }) |> futurize::futurize(seed = TRUE)
+    gibbs_sampling_lbm_cov_poisson(
+      ...,
+      prefix = paste0("Chain ", i, " - "),
+      auto_save_path = paste0(auto_save_path, "_", i, ".Rds")
+    )
+  }) |>
+    futurize::futurize(seed = TRUE)
   out_draws <- out_list[[1]]
   for (idx in seq_along(out_list[-1])) {
-    out_draws <- posterior::bind_draws(out_draws, out_list[[idx + 1]], along = "chain")
+    out_draws <- posterior::bind_draws(
+      out_draws,
+      out_list[[idx + 1]],
+      along = "chain"
+    )
   }
   return(out_draws)
 }
@@ -788,16 +1027,31 @@ chains_gibbs_sampling_lbm_cov_poisson <- function(nchains, auto_save_path = temp
 #' @return A list of length `nchains` where each element is the output
 #'   of a single call to [gibbs_sampling_lbm_cov_poisson_mixed_membership()].
 #' @export
-chains_gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(nchains, auto_save_path = tempfile("lbmsoft_poisson_"), verbose = getOption("latentcov.sbm.verbose", default = FALSE), ...) {
+chains_gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
+  nchains,
+  auto_save_path = tempfile("lbmsoft_poisson_"),
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
+  ...
+) {
   if (verbose) {
-    cli::cli_inform("Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}")
+    cli::cli_inform(
+      "Chains will be saved as {.file {paste0(auto_save_path, '_*.Rds')}}"
+    )
   }
   out_list <- lapply(seq(nchains), function(i) {
-    gibbs_sampling_lbm_cov_poisson_mixed_membership(..., prefix = paste0("Chain ", i, " - "))
-  }) |> futurize::futurize(seed = TRUE)
+    gibbs_sampling_lbm_cov_poisson_mixed_membership(
+      ...,
+      prefix = paste0("Chain ", i, " - ")
+    )
+  }) |>
+    futurize::futurize(seed = TRUE)
   out_draws <- out_list[[1]]
   for (idx in seq_along(out_list[-1])) {
-    out_draws <- posterior::bind_draws(out_draws, out_list[[idx + 1]], along = "chain")
+    out_draws <- posterior::bind_draws(
+      out_draws,
+      out_list[[idx + 1]],
+      along = "chain"
+    )
   }
   return(out_draws)
 }
