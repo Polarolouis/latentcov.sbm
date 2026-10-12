@@ -52,6 +52,8 @@ indicating the known columns block memberships}
 indicating the known columns block memberships}
     \item{\code{known_W}}{NULL (default) or a matrix (\eqn{n_2\times R})
 indicating the known columns block memberships}
+    \item{\code{known_rho}}{NULL (default) or a vectior (\eqn{R}) indicating the block
+a priori proportions}
     \item{\code{force_order}}{a boolean indicating if the order the groups
 \eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the
 decreasing marginals order(pi\%\emph{\%alpha,decreasing=TRUE) and

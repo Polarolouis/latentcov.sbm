@@ -17,6 +17,7 @@ gibbs_sampling_lbm_poisson(
   known_W = NULL,
   known_Z = NULL,
   known_pi = NULL,
+  known_rho = NULL,
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
@@ -57,6 +58,9 @@ indicating the known columns block memberships}
 \item{known_pi}{NULL (default) or a vector (\eqn{K})
 indicating the known row block proportions
 indicating the known columns block memberships}
+
+\item{known_rho}{NULL (default) or a vectior (\eqn{R}) indicating the block
+a priori proportions}
 
 \item{tol}{Numeric; a small number indicating the
 tolerance at which one wants to clamp the values,
