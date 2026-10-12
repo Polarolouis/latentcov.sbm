@@ -34,6 +34,8 @@
 #' indicating the known columns block memberships
 #' @param known_W NULL (default) or a matrix (\eqn{n_2\times R})
 #' indicating the known columns block memberships
+#' @param known_rho NULL (default) or a vectior (\eqn{R}) indicating the block
+#' a priori proportions
 #' @param force_order a boolean indicating if the order the groups
 #' \eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the
 #' decreasing marginals order(pi%*%alpha,decreasing=TRUE) and
@@ -65,6 +67,7 @@ gibbs_sampling_lbm_poisson <- function(
   known_W = NULL,
   known_Z = NULL,
   known_pi = NULL,
+  known_rho = NULL,
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
@@ -185,8 +188,12 @@ gibbs_sampling_lbm_poisson <- function(
       amount = 0
     )
     ### rho | W
-    current_gammas <- param_rho_given_W(gammas = gammas_0, W)
-    current_rho <- sample_rho_given_W(gammas_post = current_gammas)
+    if (is.null(known_rho)) {
+      current_gammas <- param_rho_given_W(gammas = gammas_0, W)
+      current_rho <- sample_rho_given_W(gammas_post = current_gammas)
+    } else {
+      current_rho <- known_rho
+    }
     if (force_order) {
       col_order <- order(current_rho, decreasing = TRUE)
       current_rho <- current_rho[col_order]
@@ -357,6 +364,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
   known_P = NULL,
   known_W = NULL,
   known_Z = NULL,
+  known_rho = NULL,
   P_sampler = sample_P_metropolis_trick_cpp,
   minibatch = TRUE,
   tol = TOL,
@@ -509,8 +517,12 @@ gibbs_sampling_lbm_cov_poisson <- function(
       amount = 0
     )
     ### rho | W
-    current_gammas <- param_rho_given_W(gammas = gammas_0, W)
-    current_rho <- sample_rho_given_W(gammas_post = current_gammas)
+    if (is.null(known_rho)) {
+      current_gammas <- param_rho_given_W(gammas = gammas_0, W)
+      current_rho <- sample_rho_given_W(gammas_post = current_gammas)
+    } else {
+      current_rho <- known_rho
+    }
     rho_array[iter, ] <- current_rho
 
     ### alpha | Y, Z, W
@@ -683,6 +695,7 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   known_alpha = NULL,
   known_P = NULL,
   known_W = NULL,
+  known_rho = NULL,
   P_sampler = sample_P_metropolis_trick_soft,
   minibatch = TRUE,
   tol = TOL,
@@ -823,8 +836,12 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
       amount = 0
     )
     ### rho | W
-    current_gammas <- param_rho_given_W(gammas = gammas_0, W)
-    current_rho <- sample_rho_given_W(gammas_post = current_gammas)
+    if (is.null(known_rho)) {
+      current_gammas <- param_rho_given_W(gammas = gammas_0, W)
+      current_rho <- sample_rho_given_W(gammas_post = current_gammas)
+    } else {
+      current_rho <- known_rho
+    }
     rho_array[iter, ] <- current_rho
 
     ### alpha | Y, Z_post_probs, W  (soft sufficient statistics)
