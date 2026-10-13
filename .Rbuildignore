@@ -9,3 +9,5 @@
 ^\.vscode$
 ^dev$
 ^compile_commands\.json$
+^[.]?air[.]toml$
+^\.pre-commit-config\.yaml$

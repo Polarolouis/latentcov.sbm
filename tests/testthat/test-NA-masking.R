@@ -60,7 +60,11 @@ test_that("gibbs_sampling_lbm_poisson runs on Y with NAs without producing NA al
   diag(Sigma) <- 1
   P <- simulate_P(K, Sigma, sigma2 = 1)
   Z <- simulate_Z_from_P(P)
-  alpha_sharp <- matrix(c(120, 100, 80, 40, 90, 70, 45, 20, 30, 20, 10, 6), K, byrow = TRUE)
+  alpha_sharp <- matrix(
+    c(120, 100, 80, 40, 90, 70, 45, 20, 30, 20, 10, 6),
+    K,
+    byrow = TRUE
+  )
   Y_full <- simulate_SBM_alpha_Z_W(alpha_sharp, Z, W)
   Na_idx <- sample.int(n1 * n2, floor(0.4 * n1 * n2))
   Y <- Y_full
@@ -68,6 +72,9 @@ test_that("gibbs_sampling_lbm_poisson runs on Y with NAs without producing NA al
 
   set.seed(1)
   draws <- gibbs_sampling_lbm_poisson(Y, K, R, niter = 20)
-  alpha <- posterior::as_draws_df(posterior::subset_draws(draws, variable = "alpha"))
+  alpha <- posterior::as_draws_df(posterior::subset_draws(
+    draws,
+    variable = "alpha"
+  ))
   expect_false(any(is.na(alpha)))
 })

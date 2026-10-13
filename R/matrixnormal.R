@@ -19,7 +19,8 @@ dmatrixnormal_plain <- function(X, M, U, V, log_p = FALSE) {
 
   exponent <- -0.5 * sum(diag(V_inv %*% t(dev) %*% U_inv %*% dev))
 
-  log_norm_const <- -0.5 * (n * p * log(2 * pi) + n * log(det_V) + p * log(det_U))
+  log_norm_const <- -0.5 *
+    (n * p * log(2 * pi) + n * log(det_V) + p * log(det_U))
 
   if (log_p) {
     out <- log_norm_const + exponent
@@ -50,7 +51,8 @@ dmatrixnormal_schur <- function(X, M, U, V, log_p = FALSE) {
 
   exponent <- -0.5 * sum((U_inv %*% dev) * (dev %*% V_inv))
 
-  log_norm_const <- -0.5 * (n * p * log(2 * pi) + n * log(det_V) + p * log(det_U))
+  log_norm_const <- -0.5 *
+    (n * p * log(2 * pi) + n * log(det_V) + p * log(det_U))
 
   if (log_p) {
     out <- log_norm_const + exponent
