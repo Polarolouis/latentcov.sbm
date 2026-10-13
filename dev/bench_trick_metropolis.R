@@ -32,7 +32,11 @@ rho_between <- -1 / (K * npc - 1)
 
 set.seed(1)
 Sigma <- matrix(rho_between, nrow = n1, ncol = n1)
-same_cluster <- outer(rep(seq_len(K), each = npc), rep(seq_len(K), each = npc), `==`)
+same_cluster <- outer(
+  rep(seq_len(K), each = npc),
+  rep(seq_len(K), each = npc),
+  `==`
+)
 Sigma[same_cluster] <- rho_within
 diag(Sigma) <- 1
 
@@ -42,12 +46,20 @@ Z0 <- t(sapply(seq_len(n1), function(j) (seq_len(K) == ((j - 1) %% K) + 1) * 1))
 # --- Sanity check: the two versions target the same kernel -------------------
 set.seed(123)
 out_R <- sample_P_metropolis_trick(
-  P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-  minibatch = minibatch, niter_metropolis = niter_metropolis
+  P = P0,
+  Z = Z0,
+  Sigma = Sigma,
+  sigma2 = sigma2,
+  minibatch = minibatch,
+  niter_metropolis = niter_metropolis
 )
 out_Cpp <- sample_P_metropolis_trick_cpp(
-  P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-  minibatch = minibatch, niter_metropolis = niter_metropolis
+  P = P0,
+  Z = Z0,
+  Sigma = Sigma,
+  sigma2 = sigma2,
+  minibatch = minibatch,
+  niter_metropolis = niter_metropolis
 )
 stopifnot(
   identical(dim(out_R), dim(out_Cpp)),
@@ -58,26 +70,43 @@ stopifnot(
 # --- Benchmark ---------------------------------------------------------------
 bm <- microbenchmark(
   R = sample_P_metropolis_trick(
-    P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-    minibatch = minibatch, niter_metropolis = niter_metropolis
+    P = P0,
+    Z = Z0,
+    Sigma = Sigma,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
   ),
   Cpp = sample_P_metropolis_trick_cpp(
-    P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-    minibatch = minibatch, niter_metropolis = niter_metropolis
+    P = P0,
+    Z = Z0,
+    Sigma = Sigma,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
   ),
   times = 100,
   unit = "ms"
 )
 
 bm_summary <- summary(bm)
-cat("\nSingle Metropolis iteration (", n1, " individuals, K = ", K, "):\n", sep = "")
+cat(
+  "\nSingle Metropolis iteration (",
+  n1,
+  " individuals, K = ",
+  K,
+  "):\n",
+  sep = ""
+)
 print(bm_summary)
 
 median_R <- bm_summary$median[bm_summary$expr == "R"]
 median_Cpp <- bm_summary$median[bm_summary$expr == "Cpp"]
 cat(sprintf(
   "\nMedian time: R = %.3f ms | C++ = %.3f ms | C++ is %.1fx faster\n",
-  median_R, median_Cpp, median_R / median_Cpp
+  median_R,
+  median_Cpp,
+  median_R / median_Cpp
 ))
 
 # --- Plot (optional, requires ggplot2 via autoplot) ---------------------------

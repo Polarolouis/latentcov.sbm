@@ -38,11 +38,14 @@ cond_Pi_given_P_min_i_sigma <- function(P, Sigma, sigma2, i) {
   K_minus_1 <- ncol(P)
   minus_i <- setdiff(1:n, i)
 
-  Si <- Sigma[i, minus_i, drop = FALSE] %*% solve(Sigma[minus_i, minus_i, drop = FALSE])
+  Si <- Sigma[i, minus_i, drop = FALSE] %*%
+    solve(Sigma[minus_i, minus_i, drop = FALSE])
 
   mean_i <- Si %*% P[minus_i, , drop = FALSE]
 
-  cov_i <- sigma2 * as.numeric(Sigma[i, i] - Si %*% Sigma[-i, i]) * diag(1, nrow = K_minus_1)
+  cov_i <- sigma2 *
+    as.numeric(Sigma[i, i] - Si %*% Sigma[-i, i]) *
+    diag(1, nrow = K_minus_1)
 
   return(list(mean = mean_i, cov = cov_i))
 }
@@ -87,8 +90,16 @@ cat_dist_ilr_given_Pi <- function(Zi, Pi) {
 #' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent positions
 #' @param Theta precision matrix (inverse of Sigma)
 #' @return A list with alpha and beta parameters of the posterior inverse gamma
-posterior_param_inv_gamma <- param_sigma2_given_P <- function(alpha_0, beta_0, P, Theta) {
-  return(list(alpha = alpha_0 + (nrow(P) / 2), beta = beta_0 + 0.5 * sum(diag(t(P) %*% Theta %*% P))))
+posterior_param_inv_gamma <- param_sigma2_given_P <- function(
+  alpha_0,
+  beta_0,
+  P,
+  Theta
+) {
+  return(list(
+    alpha = alpha_0 + (nrow(P) / 2),
+    beta = beta_0 + 0.5 * sum(diag(t(P) %*% Theta %*% P))
+  ))
 }
 
 #' Sample from the Inverse-Gamma
@@ -104,7 +115,6 @@ sample_inv_gamma_rate <- sample_sigma2_given_P <- function(shape, rate) {
 }
 
 ## CLASSICAL LBM Z and pi
-
 
 # pi | Z
 
@@ -157,7 +167,10 @@ param_multinom_probs_Z_poisson <- function(Y, alpha, W, pi, mask, tol = TOL) {
   Y_obs <- mask_observed(Y, mask)
   R_W <- Y_obs %*% W
   N_W <- mask %*% W # diag(colSums(W))
-  unormalized_log_probs <- matrix(1, nrow = nrow(Y)) %*% log(pi) + R_W %*% log(t(alpha)) - N_W %*% t(alpha)
+  unormalized_log_probs <- matrix(1, nrow = nrow(Y)) %*%
+    log(pi) +
+    R_W %*% log(t(alpha)) -
+    N_W %*% t(alpha)
 
   return(row_normalize_matrix(unormalized_log_probs, tol = tol))
 }
@@ -226,11 +239,20 @@ sample_rho_given_W <- function(gammas_post) {
 #' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
-param_multinom_probs_Z_cov_poisson <- function(Y, alpha, W, P, mask, tol = TOL) {
+param_multinom_probs_Z_cov_poisson <- function(
+  Y,
+  alpha,
+  W,
+  P,
+  mask,
+  tol = TOL
+) {
   Y_obs <- mask_observed(Y, mask)
   R_W <- Y_obs %*% W
   N_W <- mask %*% W # diag(colSums(W))
-  unormalized_log_probs <- log(ilrInv(P)) + R_W %*% log(t(alpha)) - N_W %*% t(alpha)
+  unormalized_log_probs <- log(ilrInv(P)) +
+    R_W %*% log(t(alpha)) -
+    N_W %*% t(alpha)
 
   return(row_normalize_matrix(unormalized_log_probs, tol = tol))
 }
@@ -271,7 +293,10 @@ param_multinom_probs_W_poisson <- function(Y, alpha, Z, rho, mask, tol = TOL) {
   Y_obs <- mask_observed(Y, mask)
   R_Z <- t(Y_obs) %*% Z
   N_Z <- t(mask) %*% Z # diag(colSums(Z))
-  unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*% log(rho) + R_Z %*% log(alpha) - N_Z %*% alpha
+  unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*%
+    log(rho) +
+    R_Z %*% log(alpha) -
+    N_Z %*% alpha
 
   return(row_normalize_matrix(unormalized_log_probs, tol = tol))
 }
@@ -311,7 +336,10 @@ sample_W_given_alpha_rho_Y_Z <- function(probs) {
 param_alpha_given_Y_Z_W_poisson <- function(a0, b0, Y, Z, W, mask) {
   Y_obs <- mask_observed(Y, mask)
 
-  return(list(shape = a0 + t(Z) %*% Y_obs %*% W, rate = b0 + t(Z) %*% mask %*% W))
+  return(list(
+    shape = a0 + t(Z) %*% Y_obs %*% W,
+    rate = b0 + t(Z) %*% mask %*% W
+  ))
 }
 
 #' Sample the connectivity matrix alpha

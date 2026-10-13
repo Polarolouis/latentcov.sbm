@@ -15,9 +15,25 @@
 #' @param verbose a boolean indicating if verbose message should be outputted.
 #'
 #' @export
-sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, rho = 1, verbose = getOption("latentcov.sbm.verbose", default = FALSE)) {
+sample_P_metropolis_classical <- function(
+  P,
+  Z,
+  Sigma,
+  sigma2,
+  minibatch = TRUE,
+  niter_metropolis = 50L,
+  rho = 1,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE)
+) {
   n <- nrow(P)
-  out_P <- array(P, dim = dim(P), dimnames = list("Individual" = paste0("P", seq_len(nrow(P))), "Coordinates" = seq_len(ncol(P))))
+  out_P <- array(
+    P,
+    dim = dim(P),
+    dimnames = list(
+      "Individual" = paste0("P", seq_len(nrow(P))),
+      "Coordinates" = seq_len(ncol(P))
+    )
+  )
   # Updating P
   ## Sampling an order of update for the Pis
   accepted_count <- 0
@@ -37,7 +53,23 @@ sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE,
 
       params <- cond_Pi_given_P_min_i_sigma(P_candidate, Sigma, sigma2, i)
 
-      log_accept <- log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = Pi_candidate)) - log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = P[i, ])) + mvtnorm::dmvnorm(x = Pi_candidate, mean = params$mean, sigma = params$cov, log = TRUE) - mvtnorm::dmvnorm(x = P[i, ], mean = params$mean, sigma = params$cov, log = TRUE)
+      log_accept <- log(cat_dist_ilr_given_Pi(
+        Zi = which.max(Z[i, ]),
+        Pi = Pi_candidate
+      )) -
+        log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = P[i, ])) +
+        mvtnorm::dmvnorm(
+          x = Pi_candidate,
+          mean = params$mean,
+          sigma = params$cov,
+          log = TRUE
+        ) -
+        mvtnorm::dmvnorm(
+          x = P[i, ],
+          mean = params$mean,
+          sigma = params$cov,
+          log = TRUE
+        )
 
       if (log_u < log_accept) {
         accepted_count <- accepted_count + 1
@@ -58,9 +90,24 @@ sample_P_metropolis_classical <- function(P, Z, Sigma, sigma2, minibatch = TRUE,
 #'
 #' @param ... Used to pass various args
 #' @export
-sample_P_metropolis_trick <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, ...) {
+sample_P_metropolis_trick <- function(
+  P,
+  Z,
+  Sigma,
+  sigma2,
+  minibatch = TRUE,
+  niter_metropolis = 50L,
+  ...
+) {
   n <- nrow(P)
-  out_P <- array(P, dim = dim(P), dimnames = list("Individual" = paste0("P", seq_len(nrow(P))), "Coordinates" = seq_len(ncol(P))))
+  out_P <- array(
+    P,
+    dim = dim(P),
+    dimnames = list(
+      "Individual" = paste0("P", seq_len(nrow(P))),
+      "Coordinates" = seq_len(ncol(P))
+    )
+  )
   # Updating P
   ## Sampling an order of update for the Pis
   row_order <- if (minibatch) sample(x = n, size = n) else seq(1, n)
@@ -68,11 +115,20 @@ sample_P_metropolis_trick <- function(P, Z, Sigma, sigma2, minibatch = TRUE, nit
     # Metropolis
     i <- row_order[ind_iter]
     for (iter_metro in seq(niter_metropolis)) {
-      Pi_candidate <- sample_Pi_given(P = P, Sigma = Sigma, sigma2 = sigma2, i = i)
+      Pi_candidate <- sample_Pi_given(
+        P = P,
+        Sigma = Sigma,
+        sigma2 = sigma2,
+        i = i
+      )
 
       log_u <- log(runif(n = 1))
 
-      log_accept <- log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = Pi_candidate)) - log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = P[i, ]))
+      log_accept <- log(cat_dist_ilr_given_Pi(
+        Zi = which.max(Z[i, ]),
+        Pi = Pi_candidate
+      )) -
+        log(cat_dist_ilr_given_Pi(Zi = which.max(Z[i, ]), Pi = P[i, ]))
 
       # log_accept <- log(cat_dist_ilr_given_Pi(Zi = Z[i], Pi = Pi_candidate)) - log(cat_dist_ilr_given_Pi(Zi = Z[i], Pi = current_P[i, ]))
 
@@ -100,18 +156,42 @@ sample_P_metropolis_trick <- function(P, Z, Sigma, sigma2, minibatch = TRUE, nit
 #'
 #' @return an updated matrix of latent positions, of the same size as `P`
 #' @export
-sample_P_metropolis_trick_soft <- function(P, Z, Sigma, sigma2, minibatch = TRUE, niter_metropolis = 50L, ...) {
+sample_P_metropolis_trick_soft <- function(
+  P,
+  Z,
+  Sigma,
+  sigma2,
+  minibatch = TRUE,
+  niter_metropolis = 50L,
+  ...
+) {
   n <- nrow(P)
-  out_P <- array(P, dim = dim(P), dimnames = list("Individual" = paste0("P", seq_len(nrow(P))), "Coordinates" = seq_len(ncol(P))))
+  out_P <- array(
+    P,
+    dim = dim(P),
+    dimnames = list(
+      "Individual" = paste0("P", seq_len(nrow(P))),
+      "Coordinates" = seq_len(ncol(P))
+    )
+  )
   row_order <- if (minibatch) sample(x = n, size = n) else seq(1, n)
   for (ind_iter in seq(n)) {
     i <- row_order[ind_iter]
     for (iter_metro in seq(niter_metropolis)) {
-      Pi_candidate <- sample_Pi_given(P = P, Sigma = Sigma, sigma2 = sigma2, i = i)
+      Pi_candidate <- sample_Pi_given(
+        P = P,
+        Sigma = Sigma,
+        sigma2 = sigma2,
+        i = i
+      )
 
       # Mixed-membership log-likelihood ratio:
       #   sum_k Z_soft[i,k] * (log ilrInv(P_i^cand)[k] - log ilrInv(P_i)[k])
-      log_accept <- sum(Z[i, ] * (log(ilrInv(matrix(Pi_candidate, nrow = 1))) - log(ilrInv(matrix(P[i, ], nrow = 1)))))
+      log_accept <- sum(
+        Z[i, ] *
+          (log(ilrInv(matrix(Pi_candidate, nrow = 1))) -
+            log(ilrInv(matrix(P[i, ], nrow = 1))))
+      )
       log_u <- log(runif(n = 1))
 
       if (log_u < log_accept) {
