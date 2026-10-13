@@ -46,7 +46,11 @@ rho_between <- -1 / (K * npc - 1)
 
 set.seed(1)
 Sigma <- matrix(rho_between, nrow = n1, ncol = n1)
-same_cluster <- outer(rep(seq_len(K), each = npc), rep(seq_len(K), each = npc), `==`)
+same_cluster <- outer(
+  rep(seq_len(K), each = npc),
+  rep(seq_len(K), each = npc),
+  `==`
+)
 Sigma[same_cluster] <- rho_within
 diag(Sigma) <- 1
 
@@ -60,7 +64,14 @@ alpha_true <- matrix(seq(0.5, length.out = K * R, by = 0.1), nrow = K)
 lambda <- Z0 %*% alpha_true %*% t(W0)
 Y <- matrix(rpois(n1 * n2, lambda), nrow = n1, ncol = n2)
 
-priors_hyper_params <- list(alpha_0 = 1, beta_0 = 1, gammas_0 = rep(2, R), etas_0 = rep(2, K), a0 = 1, b0 = 1)
+priors_hyper_params <- list(
+  alpha_0 = 1,
+  beta_0 = 1,
+  gammas_0 = rep(2, R),
+  etas_0 = rep(2, K),
+  a0 = 1,
+  b0 = 1
+)
 
 # --- Sanity check: every implementation runs and returns finite values -----
 samplers <- list(
@@ -73,8 +84,12 @@ samplers <- list(
 set.seed(123)
 for (nm in names(samplers)) {
   out <- samplers[[nm]](
-    P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-    minibatch = minibatch, niter_metropolis = niter_metropolis
+    P = P0,
+    Z = Z0,
+    Sigma = Sigma,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
   )
   stopifnot(
     identical(dim(out), dim(P0)),
@@ -87,11 +102,18 @@ set.seed(123)
 for (nm in names(samplers)) {
   res <- suppressMessages(suppressWarnings(
     gibbs_sampling_lbm_cov_poisson(
-      Sigma = Sigma, Y = Y, K = K, R = R,
-      init_Z = Z0, init_W = W0,
-      niter = 3L, niter_metropolis = niter_metropolis,
-      sigma2_fixed = sigma2_fixed, P_sampler = samplers[[nm]],
-      priors_hyper_params = priors_hyper_params, verbose = FALSE
+      Sigma = Sigma,
+      Y = Y,
+      K = K,
+      R = R,
+      init_Z = Z0,
+      init_W = W0,
+      niter = 3L,
+      niter_metropolis = niter_metropolis,
+      sigma2_fixed = sigma2_fixed,
+      P_sampler = samplers[[nm]],
+      priors_hyper_params = priors_hyper_params,
+      verbose = FALSE
     )
   ))
   stopifnot(all(is.finite(as.matrix(res))))
@@ -101,20 +123,36 @@ cat("Full Gibbs sampler ran correctly with each P sampler.\n")
 # --- Benchmark 1: standalone P samplers (one Metropolis pass) ---------------
 bm_mh <- microbenchmark(
   "R classical" = sample_P_metropolis_classical(
-    P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-    minibatch = minibatch, niter_metropolis = niter_metropolis
+    P = P0,
+    Z = Z0,
+    Sigma = Sigma,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
   ),
   "R trick" = sample_P_metropolis_trick(
-    P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-    minibatch = minibatch, niter_metropolis = niter_metropolis
+    P = P0,
+    Z = Z0,
+    Sigma = Sigma,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
   ),
   "C++ classical" = sample_P_metropolis_classical_cpp(
-    P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-    minibatch = minibatch, niter_metropolis = niter_metropolis
+    P = P0,
+    Z = Z0,
+    Sigma = Sigma,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
   ),
   "C++ trick" = sample_P_metropolis_trick_cpp(
-    P = P0, Z = Z0, Sigma = Sigma, sigma2 = sigma2,
-    minibatch = minibatch, niter_metropolis = niter_metropolis
+    P = P0,
+    Z = Z0,
+    Sigma = Sigma,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
   ),
   times = 10,
   unit = "ms"
@@ -122,19 +160,30 @@ bm_mh <- microbenchmark(
 
 bm_mh_summary <- summary(bm_mh)
 cat("\n--- Benchmark 1: standalone P samplers, one Metropolis pass ---\n")
-cat(sprintf("(n1 = %d rows, K = %d, niter_metropolis = %d)\n", n1, K, niter_metropolis))
+cat(sprintf(
+  "(n1 = %d rows, K = %d, niter_metropolis = %d)\n",
+  n1,
+  K,
+  niter_metropolis
+))
 print(bm_mh_summary)
 
 median_mh <- bm_mh_summary$median
-speedup <- median_mh[which(names(median_mh) == "R classical")] / median_mh[which(names(median_mh) == "C++ classical")]
+speedup <- median_mh[which(names(median_mh) == "R classical")] /
+  median_mh[which(names(median_mh) == "C++ classical")]
 cat(sprintf(
   "Median: R classical = %.2f ms | C++ classical = %.2f ms | C++ classical is %.1fx faster\n",
-  median_mh["R classical"], median_mh["C++ classical"], speedup
+  median_mh["R classical"],
+  median_mh["C++ classical"],
+  speedup
 ))
-speedup_trick <- median_mh[which(names(median_mh) == "R trick")] / median_mh[which(names(median_mh) == "C++ trick")]
+speedup_trick <- median_mh[which(names(median_mh) == "R trick")] /
+  median_mh[which(names(median_mh) == "C++ trick")]
 cat(sprintf(
   "Median: R trick = %.2f ms | C++ trick = %.2f ms | C++ trick is %.1fx faster\n",
-  median_mh["R trick"], median_mh["C++ trick"], speedup_trick
+  median_mh["R trick"],
+  median_mh["C++ trick"],
+  speedup_trick
 ))
 
 # --- Benchmark 2: full per-chain Gibbs sampler ------------------------------
@@ -143,11 +192,18 @@ cat(sprintf(
 gibbs_call <- function(P_sampler) {
   suppressMessages(suppressWarnings(
     gibbs_sampling_lbm_cov_poisson(
-      Sigma = Sigma, Y = Y, K = K, R = R,
-      init_Z = Z0, init_W = W0,
-      niter = 100L, niter_metropolis = niter_metropolis,
-      sigma2_fixed = sigma2_fixed, P_sampler = P_sampler,
-      priors_hyper_params = priors_hyper_params, verbose = FALSE
+      Sigma = Sigma,
+      Y = Y,
+      K = K,
+      R = R,
+      init_Z = Z0,
+      init_W = W0,
+      niter = 100L,
+      niter_metropolis = niter_metropolis,
+      sigma2_fixed = sigma2_fixed,
+      P_sampler = P_sampler,
+      priors_hyper_params = priors_hyper_params,
+      verbose = FALSE
     )
   ))
 }
@@ -163,19 +219,28 @@ bm_gibbs <- microbenchmark(
 
 bm_gibbs_summary <- summary(bm_gibbs)
 cat("\n--- Benchmark 2: full per-chain Gibbs sampler ---\n")
-cat(sprintf("(niter = 10, niter_metropolis = %d, n1 = %d)\n", niter_metropolis, n1))
+cat(sprintf(
+  "(niter = 10, niter_metropolis = %d, n1 = %d)\n",
+  niter_metropolis,
+  n1
+))
 print(bm_gibbs_summary)
 
 median_gibbs <- bm_gibbs_summary$median
-speedup_gibbs <- median_gibbs[which(names(median_gibbs) == "R classical")] / median_gibbs[which(names(median_gibbs) == "C++ classical")]
+speedup_gibbs <- median_gibbs[which(names(median_gibbs) == "R classical")] /
+  median_gibbs[which(names(median_gibbs) == "C++ classical")]
 cat(sprintf(
   "Median over a chain: R classical = %.1f ms | C++ classical = %.1f ms | C++ classical is %.1fx faster\n",
-  median_gibbs["R classical"], median_gibbs["C++ classical"], speedup_gibbs
+  median_gibbs["R classical"],
+  median_gibbs["C++ classical"],
+  speedup_gibbs
 ))
 speedup_gibbs_trick <- median_gibbs[2] / median_gibbs[4]
 cat(sprintf(
   "Median over a chain: R trick = %.1f ms | C++ trick = %.1f ms | C++ trick is %.1fx faster\n",
-  median_gibbs[2], median_gibbs[4], speedup_gibbs_trick
+  median_gibbs[2],
+  median_gibbs[4],
+  speedup_gibbs_trick
 ))
 
 # --- Plots (optional, requires ggplot2) --------------------------------------
@@ -185,12 +250,22 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
     transform(as.data.frame(bm_gibbs), level = "Gibbs chain")
   )
   bm_all$expr <- factor(bm_all$expr, levels = names(samplers))
-  g <- ggplot2::ggplot(bm_all, ggplot2::aes(x = expr, y = time / 1e6, fill = expr)) +
+  g <- ggplot2::ggplot(
+    bm_all,
+    ggplot2::aes(x = expr, y = time / 1e6, fill = expr)
+  ) +
     ggplot2::geom_boxplot() +
     ggplot2::facet_wrap(~level, scales = "free_y") +
-    ggplot2::labs(x = NULL, y = "Time (ms)", title = "C++ vs R Metropolis-Hastings P samplers") +
+    ggplot2::labs(
+      x = NULL,
+      y = "Time (ms)",
+      title = "C++ vs R Metropolis-Hastings P samplers"
+    ) +
     ggplot2::theme_minimal() +
-    ggplot2::theme(legend.position = "none", axis.text.x = ggplot2::element_text(angle = 15, hjust = 1))
+    ggplot2::theme(
+      legend.position = "none",
+      axis.text.x = ggplot2::element_text(angle = 15, hjust = 1)
+    )
   gg_path <- file.path("dev", "bench_cpp_metropolis_gibbs.png")
   ggplot2::ggsave(gg_path, g, width = 8, height = 4)
   cat("Boxplot saved to:", gg_path, "\n")

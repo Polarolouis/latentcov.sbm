@@ -77,7 +77,6 @@
 
 #   old_colors <- unname(unlist(bayesplot::color_scheme_get()))
 
-
 #   all_plots <- lapply(seq_len(dim(draws)[2]), function(chain_idx) {
 #     bayesplot::color_scheme_set(scheme = old_colors[c(chain_idx, seq(length(old_colors))[-chain_idx])])
 #     chain_draws <- draws[, chain_idx, ]
@@ -98,7 +97,6 @@
 
 #   return(all_plots)
 # }
-
 
 # #' Plot the recovery of the row block proportions pi
 # #'
@@ -121,7 +119,6 @@
 # pi_recovery_plots <- function(draws, true_alpha, true_Z_ind, find_permutation = find_permutation_alphas) {
 #   K <- nrow(true_alpha)
 
-
 #   alpha_var_idx <- grep("^alpha", dimnames(draws)[["variable"]])
 #   alpha_ref <- matrix(apply(draws[, 1, alpha_var_idx], 3, mean), nrow = K)
 #   perms_ref <- find_permutation(alpha_ref, true_alpha)
@@ -129,7 +126,6 @@
 #   sim_pi_df <- colMeans(true_Z_ind)[perms_ref[["row_perm"]]] |>
 #     reshape2::melt(value.name = "true") |>
 #     dplyr::mutate(Parameter = paste("pi[", seq(K), "]", sep = ""), Type = "simulated")
-
 
 #   lapply(seq_len(dim(draws)[2]), function(chain_idx) {
 #     chain_draws <- draws[, chain_idx, ]
@@ -147,7 +143,6 @@
 #       ggplot2::ggtitle(paste0("Chain #", chain_idx))
 #   }) |> patchwork::wrap_plots(nrow = posterior::nchains(draws)) + patchwork::plot_annotation(subtitle = "pi histograms")
 # }
-
 
 # #' Plot the recovery of the posterior mean of pi
 # #'
@@ -179,7 +174,6 @@
 #   sim_pi_df <- colMeans(true_Z_ind)[perms_ref[["row_perm"]]] |>
 #     reshape2::melt(value.name = "true") |>
 #     dplyr::mutate(Parameter = paste("mean_pi", seq(K), sep = "."), Type = "simulated")
-
 
 #   lapply(seq_len(dim(draws)[2]), function(chain_idx) {
 #     chain_draws <- draws[, chain_idx, ]
@@ -225,7 +219,6 @@
 #   K <- nrow(true_alpha)
 #   alpha_ref <- matrix(apply(draws[, 1, alpha_var_idx], 3, mean), nrow = K)
 #   perms_ref <- find_permutation(alpha_ref, true_alpha)
-
 
 #   true_P_df <- true_rho[perms_ref[["col_perm"]]] |>
 #     reshape2::melt(value.name = "true") |>
