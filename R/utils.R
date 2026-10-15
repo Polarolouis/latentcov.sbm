@@ -341,6 +341,8 @@ perm_matrix_from_order <- function(order) {
 #'   iteration \eqn{\times} chain \eqn{\times} parameter.
 #' @param K Number of row groups.
 #' @param R Number of column groups.
+#' @param alpha_ref (Optional) a matrix of size \eqn{K\times R} used to align
+#' the chains.
 #' @param Psi_function A function building the contrast matrix used to
 #'   rotate the `P` coordinates. Defaults to [default_Psi_function()].
 #' @param find_permutations A function estimating the row and column

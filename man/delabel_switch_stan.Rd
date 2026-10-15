@@ -21,6 +21,9 @@ iteration \eqn{\times} chain \eqn{\times} parameter.}
 
 \item{R}{Number of column groups.}
 
+\item{alpha_ref}{(Optional) a matrix of size \eqn{K\times R} used to align
+the chains.}
+
 \item{Psi_function}{A function building the contrast matrix used to
 rotate the \code{P} coordinates. Defaults to \code{\link[=default_Psi_function]{default_Psi_function()}}.}
 
