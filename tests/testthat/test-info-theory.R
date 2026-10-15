@@ -7,7 +7,11 @@ test_that("entropy of a uniform 2-category distribution is log(2)", {
 
 test_that("entropy in log2/log10 scales rescales log entropy", {
   expect_equal(entropy(c(0.5, 0.5), unit = "log2"), 1, tolerance = 1e-12)
-  expect_equal(entropy(c(0.5, 0.5), unit = "log10"), log10(2), tolerance = 1e-12)
+  expect_equal(
+    entropy(c(0.5, 0.5), unit = "log10"),
+    log10(2),
+    tolerance = 1e-12
+  )
 })
 
 test_that("entropy is maximal for uniform and zero for degenerate", {
@@ -31,7 +35,11 @@ test_that("conditional_entropy and mutual_information satisfy the chain rule", {
   H_col <- entropy(colSums(tab))
   H_row <- entropy(rowSums(tab))
   expect_equal(conditional_entropy(tab), H_joint - H_col, tolerance = 1e-12)
-  expect_equal(mutual_information(tab), H_row + H_col - H_joint, tolerance = 1e-12)
+  expect_equal(
+    mutual_information(tab),
+    H_row + H_col - H_joint,
+    tolerance = 1e-12
+  )
   expect_true(mutual_information(tab) >= 0)
 })
 
@@ -65,10 +73,17 @@ test_that("row_normalize_matrix clamps to [tol, 1 - tol] when tol is given", {
 })
 
 test_that("row_normalize_matrix returns a matrix for several rows", {
-  x <- matrix(c(
-    log(1), log(3),
-    log(2), log(2)
-  ), 2, 2, byrow = TRUE)
+  x <- matrix(
+    c(
+      log(1),
+      log(3),
+      log(2),
+      log(2)
+    ),
+    2,
+    2,
+    byrow = TRUE
+  )
   out <- row_normalize_matrix(x, is_log = TRUE)
   expect_equal(dim(out), c(2, 2))
   expect_equal(rowSums(out), rep(1, 2), tolerance = 1e-12)

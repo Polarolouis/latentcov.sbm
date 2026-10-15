@@ -60,7 +60,13 @@ test_that("conditional Pi_given_PminI_sigma2 behave the same in C++ and R", {
 test_that("block conditional mean matches the R block formula", {
   idx <- c(0L, 2L, 5L)
   minus <- setdiff(seq(0, n1 - 1), idx)
-  expected <- Sigma[idx + 1, minus + 1] %*% solve(Sigma[minus + 1, minus + 1], Pnonindep[minus + 1, , drop = FALSE])
-  got <- block_mean_of_Pi_given_P_min_i_sigma(P = Pnonindep, Sigma = Sigma, sigma2 = sigma2star, indiv_indices = idx)
+  expected <- Sigma[idx + 1, minus + 1] %*%
+    solve(Sigma[minus + 1, minus + 1], Pnonindep[minus + 1, , drop = FALSE])
+  got <- block_mean_of_Pi_given_P_min_i_sigma(
+    P = Pnonindep,
+    Sigma = Sigma,
+    sigma2 = sigma2star,
+    indiv_indices = idx
+  )
   expect_equal(unname(got), unname(expected), tolerance = 1e-8)
 })
