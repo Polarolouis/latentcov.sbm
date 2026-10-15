@@ -19,8 +19,19 @@ test_that("dmatrixnormal_plain and dmatrixnormal_schur coincide", {
 })
 
 test_that("the 1x1 matrix normal is a standard normal density", {
-  expect_equal(dmatrixnormal_plain(matrix(0, 1, 1), matrix(0, 1, 1), matrix(1, 1, 1), matrix(1, 1, 1)), dnorm(0))
-  expect_equal(dmatrixnormal_plain(matrix(1, 1, 1), matrix(0, 1, 1), diag(1), diag(1)), dnorm(1))
+  expect_equal(
+    dmatrixnormal_plain(
+      matrix(0, 1, 1),
+      matrix(0, 1, 1),
+      matrix(1, 1, 1),
+      matrix(1, 1, 1)
+    ),
+    dnorm(0)
+  )
+  expect_equal(
+    dmatrixnormal_plain(matrix(1, 1, 1), matrix(0, 1, 1), diag(1), diag(1)),
+    dnorm(1)
+  )
 })
 
 test_that("log_p toggles between density and log-density", {
@@ -94,5 +105,9 @@ test_that("compute_Uinv returns the matrix inverse", {
 })
 
 test_that("compute_Uinv is symmetric for a symmetric input", {
-  expect_equal(compute_Uinv(diag(4) * 3 + 1), solve(diag(4) * 3 + 1), tolerance = 1e-10)
+  expect_equal(
+    compute_Uinv(diag(4) * 3 + 1),
+    solve(diag(4) * 3 + 1),
+    tolerance = 1e-10
+  )
 })

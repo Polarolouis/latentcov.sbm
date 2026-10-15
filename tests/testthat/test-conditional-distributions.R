@@ -8,8 +8,16 @@ test_that("cond_Pi_fast and cond_Pi_given_P_min_i_sigma agree for the same Sigma
   for (i in 1:4) {
     got_fast <- cond_Pi_fast(P, Theta, sigma2 = 0.8, i = i)
     got_full <- cond_Pi_given_P_min_i_sigma(P, Sigma, sigma2 = 0.8, i = i)
-    expect_equal(as.vector(got_fast$mean), as.vector(got_full$mean), tolerance = 1e-10)
-    expect_equal(as.vector(got_fast$cov), as.vector(got_full$cov), tolerance = 1e-10)
+    expect_equal(
+      as.vector(got_fast$mean),
+      as.vector(got_full$mean),
+      tolerance = 1e-10
+    )
+    expect_equal(
+      as.vector(got_fast$cov),
+      as.vector(got_full$cov),
+      tolerance = 1e-10
+    )
   }
 })
 
@@ -23,7 +31,10 @@ test_that("cond_Pi_fast with diagonal Theta recovers an iid normal mean", {
 
 test_that("sample_Pi_given draws from the conditional with the right first moment", {
   set.seed(502L)
-  draws <- replicate(20000, sample_Pi_given(P_fx, Sigma_fx, sigma2 = 0.5, i = 1))
+  draws <- replicate(
+    20000,
+    sample_Pi_given(P_fx, Sigma_fx, sigma2 = 0.5, i = 1)
+  )
   theor <- cond_Pi_given_P_min_i_sigma(P_fx, Sigma_fx, sigma2 = 0.5, i = 1)
   expect_equal(apply(draws, 1, mean), as.vector(theor$mean), tolerance = 0.05)
   expect_equal(nrow(draws), ncol(P_fx))
@@ -41,7 +52,11 @@ test_that("sample_pi_given_Z lies on the simplex and matches the Dirichlet mean"
   set.seed(503L)
   etas_post <- c(5, 3, 2)
   draws <- replicate(20000, sample_pi_given_Z(etas_post))
-  expect_equal(apply(draws, 1, mean), etas_post / sum(etas_post), tolerance = 0.05)
+  expect_equal(
+    apply(draws, 1, mean),
+    etas_post / sum(etas_post),
+    tolerance = 0.05
+  )
   expect_equal(colSums(draws), rep(1, 20000))
   expect_true(all(draws > 0))
 })
@@ -71,17 +86,46 @@ test_that("param_multinom_probs_Z_poisson gives normalized valid probabilities",
 
 test_that("param_multinom_probs_Z_poisson is NA-proof through the mask", {
   clean <- mask_NA(Y_fx)$YnoNA
-  with_na <- param_multinom_probs_Z_poisson(Y_fx, alpha_fx, W_fx, pi_fx, mask_fx)
-  without_na <- param_multinom_probs_Z_poisson(clean, alpha_fx, W_fx, pi_fx, mask_fx)
+  with_na <- param_multinom_probs_Z_poisson(
+    Y_fx,
+    alpha_fx,
+    W_fx,
+    pi_fx,
+    mask_fx
+  )
+  without_na <- param_multinom_probs_Z_poisson(
+    clean,
+    alpha_fx,
+    W_fx,
+    pi_fx,
+    mask_fx
+  )
   expect_equal(with_na, without_na, tolerance = 1e-12)
   expect_false(anyNA(with_na))
 })
 
 test_that("param_multinom_probs_Z_cov_poisson uses per-row pi from ilrInv(P)", {
   set.seed(505L)
-  P_rep <- matrix(rep(ilr(matrix(pi_fx, 1, K_fx)), n1_fx), n1_fx, K_fx - 1, byrow = TRUE)
-  cov_probs <- param_multinom_probs_Z_cov_poisson(Y_fx, alpha_fx, W_fx, P_rep, mask_fx)
-  plain_probs <- param_multinom_probs_Z_poisson(Y_fx, alpha_fx, W_fx, pi_fx, mask_fx)
+  P_rep <- matrix(
+    rep(ilr(matrix(pi_fx, 1, K_fx)), n1_fx),
+    n1_fx,
+    K_fx - 1,
+    byrow = TRUE
+  )
+  cov_probs <- param_multinom_probs_Z_cov_poisson(
+    Y_fx,
+    alpha_fx,
+    W_fx,
+    P_rep,
+    mask_fx
+  )
+  plain_probs <- param_multinom_probs_Z_poisson(
+    Y_fx,
+    alpha_fx,
+    W_fx,
+    pi_fx,
+    mask_fx
+  )
   expect_equal(cov_probs, plain_probs, tolerance = 1e-10)
   expect_equal(rowSums(cov_probs), rep(1, n1_fx), tolerance = 1e-10)
 })
@@ -100,7 +144,14 @@ test_that("param_multinom_probs_W_poisson is normalized and NA-proof", {
 
 test_that("tol clamps extreme membership probabilities", {
   extreme_alpha <- matrix(c(100, 1, 1, 1, 1, 100), K_fx, R_fx)
-  probs <- param_multinom_probs_Z_poisson(Y_fx, extreme_alpha, W_fx, pi_fx, mask_fx, tol = 0.05)
+  probs <- param_multinom_probs_Z_poisson(
+    Y_fx,
+    extreme_alpha,
+    W_fx,
+    pi_fx,
+    mask_fx,
+    tol = 0.05
+  )
   expect_true(all(probs >= 0.05 - 1e-10))
   expect_true(all(probs <= 0.95 + 1e-10))
 })
@@ -127,7 +178,14 @@ test_that("sample_Z draws from a soft distribution with the right frequency", {
 # --- alpha | Y, Z, W ----------------------------------------------------------
 
 test_that("param_alpha_given_Y_Z_W_poisson sums counts per block pair", {
-  res <- param_alpha_given_Y_Z_W_poisson(a0 = 0.1, b0 = 0.1, Y = Y_fx, Z = Z_fx, W = W_fx, mask = mask_fx)
+  res <- param_alpha_given_Y_Z_W_poisson(
+    a0 = 0.1,
+    b0 = 0.1,
+    Y = Y_fx,
+    Z = Z_fx,
+    W = W_fx,
+    mask = mask_fx
+  )
   expect_equal(dim(res$shape), c(K_fx, R_fx))
   expect_equal(
     res$shape,
@@ -139,7 +197,14 @@ test_that("param_alpha_given_Y_Z_W_poisson sums counts per block pair", {
 test_that("NAs do not leak into the alpha sufficient statistics", {
   clean <- mask_NA(Y_fx)$YnoNA
   with_na <- param_alpha_given_Y_Z_W_poisson(0, 0, Y_fx, Z_fx, W_fx, mask_fx)
-  without_na <- param_alpha_given_Y_Z_W_poisson(0, 0, clean, Z_fx, W_fx, mask_fx)
+  without_na <- param_alpha_given_Y_Z_W_poisson(
+    0,
+    0,
+    clean,
+    Z_fx,
+    W_fx,
+    mask_fx
+  )
   expect_equal(with_na, without_na)
   expect_false(anyNA(with_na$shape))
   expect_false(anyNA(with_na$rate))
