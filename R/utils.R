@@ -778,13 +778,19 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
 compute_meanpi <- function(draws, K = NULL) {
   Z_draws <- posterior::subset_draws(draws, variable = "Z")
   if (is.null(K)) {
-    Z_levels <- Z_draws |>
-      as.vector() |>
-      unique() |>
-      sort()
-  } else {
-    Z_levels <- seq(K)
+    P_names <- posterior::subset_draws(draws, variable = "P") |>
+      posterior::variables()
+    all_P_matches <- regmatches(
+      P_names,
+      regexec(pattern = "P\\[[0-9]+,([0-9]+)\\]", text = P_names)
+    )
+    K <- max(
+      sapply(all_P_matches, function(vec) vec[2]) |> unique() |> as.integer()
+    ) +
+      1
   }
+
+  Z_levels <- seq(K)
   meanpi_draws <- Z_draws |>
     apply(c(1, 2), function(x) {
       as.vector(prop.table(table(factor(

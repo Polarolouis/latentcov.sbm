@@ -295,17 +295,33 @@ test_that("compute_meanpi appends the mean row proportions", {
   expect_equal(unname(unlist(df[1, paste0("Z[", 1:n, "]")])), Z1)
 })
 
-test_that("compute_meanpi infers the number of groups when K is NULL", {
+test_that("compute_meanpi infers the number of groups when K is NULL using P", {
   niter <- 2
   nch <- 1
+  K <- 3
   n <- 6
   Z1 <- rep(1:3, each = 2)
   arr <- array(
     0,
-    dim = c(niter, nch, n),
-    dimnames = list(NULL, NULL, paste0("Z[", 1:n, "]"))
+    dim = c(niter, nch, n * K),
+    dimnames = list(
+      NULL,
+      NULL,
+      c(
+        paste0("Z[", seq(n), "]"),
+        paste0(
+          "P[",
+          outer(
+            seq(n),
+            seq(K - 1),
+            FUN = Vectorize(function(x, y) paste0(x, ",", y))
+          ),
+          "]"
+        )
+      )
+    )
   )
-  arr[,,] <- rep(Z1, each = niter * nch)
+  arr[,, seq(n)] <- rep(Z1, each = niter * nch)
   dr <- posterior::as_draws_array(arr)
   out <- compute_meanpi(dr)
   expect_equal(
