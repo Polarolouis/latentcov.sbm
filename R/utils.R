@@ -85,7 +85,15 @@ build_covariance_matrix <- function(draws, n, K, corr = FALSE) {
   # Function implementation would go here
   P_draws <- posterior::subset_draws(draws, variable = "P")
   P_array <- aperm(
-    array(P_draws, dim = c(200, 5, n, K - 1)),
+    array(
+      P_draws,
+      dim = c(
+        posterior::niterations(P_draws),
+        posterior::nchains(P_draws),
+        n,
+        K - 1
+      )
+    ),
     c(3, 4, 1, 2)
   )
   dimnames(P_array) <- list(
@@ -172,6 +180,12 @@ list_arrays_to_stan <- function(array_list) {
       }
     })
   )
+  if (is.null(out)) {
+    niter <- max(vapply(array_list, function(x) dim(x)[1], integer(1)))
+    out <- matrix(numeric(0), nrow = niter, ncol = 0)
+    dimnames(out) <- list(Iteration = seq_len(niter), Parameter = character(0))
+    return(out)
+  }
   names(dimnames(out)) <- c("Iteration", "Parameter")
   return(out)
 }
@@ -378,7 +392,7 @@ delabel_switch_stan <- function(
   draws_delabeled <- draws
   Psi <- Psi_function(K)
 
-  # Process each chain starting from chain 2 (chain 1 is the reference)
+  # Process every chain, each one being aligned onto the first (or alpha_ref)
   for (chain_idx in seq_len(posterior::nchains(draws_delabeled))) {
     perm <- permutations_list[[chain_idx]]
     row_perm <- perm$row_perm
@@ -492,9 +506,9 @@ delabel_switch_stan_true <- function(
   draws_delabeled <- draws
   Psi <- Psi_function(K)
 
-  # Process each chain starting from chain 2 (chain 1 is the reference)
-  for (chain_idx in 2:dim(draws)[2]) {
-    perm <- permutations_list[[chain_idx - 1]]
+  # Process every chain, each one being aligned onto the true alpha
+  for (chain_idx in seq_len(posterior::nchains(draws_delabeled))) {
+    perm <- permutations_list[[chain_idx]]
     row_perm <- perm$row_perm
     col_perm <- perm$col_perm
 
@@ -744,8 +758,8 @@ lbm_results_to_stan_draws <- function(
       draws,
       K = K,
       R = R,
-      Psi_function,
-      find_permutation
+      Psi_function = Psi_function,
+      find_permutations = find_permutation
     )
   }
   if (apply_burnin_thinning) {
@@ -778,21 +792,24 @@ ARI_table <- function(draws, true, label = "Z") {
     true <- .rev_one_hot(true)
   }
 
-  aritable <- t(sapply(
-    seq(posterior::niterations(label_draws)),
-    function(iter) {
-      sapply(seq(posterior::nchains(label_draws)), function(chain_idx) {
-        aricode::ARI(as.vector(label_draws[iter, chain_idx, ]), true)
-      })
+  niter <- posterior::niterations(label_draws)
+  nch <- posterior::nchains(label_draws)
+  aritable <- matrix(0, nrow = niter, ncol = nch)
+  for (iter in seq_len(niter)) {
+    for (chain_idx in seq_len(nch)) {
+      aritable[iter, chain_idx] <- aricode::ARI(
+        as.vector(label_draws[iter, chain_idx, ]),
+        true
+      )
     }
-  ))
+  }
 
   aritable <- array(
     aritable,
-    dim(aritable),
+    dim = c(niter, nch),
     dimnames = list(
-      "Iteration" = seq(posterior::niterations(draws)),
-      "Chains" = seq(posterior::nchains(draws))
+      "Iteration" = seq_len(niter),
+      "Chains" = seq_len(nch)
     )
   )
   return(aritable)
@@ -1078,4 +1095,17 @@ mask_NA <- function(Y, replace_value = 0) {
 #' @return Y_obs the matrix Y with its NAs masked and replaced
 mask_observed <- function(Y, mask) {
   replace(Y, is.na(Y), 0) * mask
+}
+
+
+#' Convert a hard membership argument (either a one-hot indicator matrix
+#' `n x K` or a vector of labels) into a plain vector of labels, which is the
+#' internal representation carried through the Gibbs updates.
+#'
+#' @param memb an `n x K` matrix
+known_membership_to_labels <- function(memb) {
+  if (is.matrix(memb)) {
+    return(apply(memb, 1, which.max))
+  }
+  as.integer(memb)
 }

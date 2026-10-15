@@ -11,6 +11,7 @@ Config/roxygen2/version: 8.1.1
 URL: https://github.com/Polarolouis/latentcov.sbm
 BugReports: https://github.com/Polarolouis/latentcov.sbm/issues
 Suggests: 
+    future.apply,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Config/testthat/parallel: true
