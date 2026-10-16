@@ -329,6 +329,64 @@ perm_matrix_from_order <- function(order) {
   })
 }
 
+#' Helper function to extract MAP clustering variables
+#'
+#' @param draws A STAN format draw array
+#' @param variable A string either "Z", "W"
+#' @param factor A boolean
+#'
+#' @param ... Arguments passed to \code{posterior::subset_draws}
+#'
+#' @inheritDotParams posterior::subset_draws
+#'
+#' @return the extracted parameter
+extract_MAP_draws <- function(draws, variable = "Z", factor = TRUE, ...) {
+  label_draws <- posterior::subset_draws(draws, variable = variable)
+
+  all_labels <- sort(unique(as.vector(label_draws)))
+
+  Z_MAP_ind <- label_draws |>
+    apply(3, function(t) {
+      prop.table(table(factor(x = as.vector(t), levels = all_labels)))
+    }) |>
+    t()
+  if (factor) {
+    return(factor(apply(Z_MAP_ind, 1, which.max), levels = all_labels))
+  } else {
+    return(Z_MAP_ind)
+  }
+}
+
+#' Helper function to extract parameter with a transformation
+#'
+#' @param draws A STAN format draw array
+#' @param variable A string naming a variable to select from the draws array
+#' @param regex A boolean, default to FALSE, specifying if the `variable` is a
+#' regular expression
+#' @param transformation The transformation to apply to summarize the data.
+#' Defaults to `median`
+#'
+#' @param ... Arguments passed to \code{posterior::subset_draws}
+#'
+#' @inheritDotParams posterior::subset_draws
+#'
+#' @return the extracted parameter
+extract_parameter_draws <- function(
+  draws,
+  variable,
+  regex = FALSE,
+  transformation = median,
+  ...
+) {
+  parameter_draws <- posterior::subset_draws(
+    draws,
+    variable = variable,
+    regex = regex
+  )
+
+  return(apply(parameter_draws, 3, transformation))
+}
+
 #' Correct label switching across MCMC chains
 #'
 #' Relabels the block indices of every MCMC chain (except the first, used as
