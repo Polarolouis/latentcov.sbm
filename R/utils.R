@@ -432,7 +432,10 @@ delabel_switch_stan <- function(
 
   alpha_matrices <- lapply(seq(posterior::nchains(draws)), function(chain_idx) {
     matrix(
-      extract_parameter_draws(draws, variable = "alpha"),
+      extract_parameter_draws(
+        posterior::subset_draws(draws, chain = chain_idx),
+        variable = "alpha"
+      ),
       nrow = K,
       ncol = R
     )

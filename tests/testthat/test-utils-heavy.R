@@ -419,8 +419,8 @@ chains_sampled_equal <- function(draws) {
 }
 
 test_that("delabel_switch_stan aligns a permuted second chain onto the first", {
-  dr <- build_label_switched_draws(vars = "meanpi")
-  out <- delabel_switch_stan(dr, K = 3, R = 2)
+  ddr <- build_label_switched_draws(vars = "meanpi")
+  out <- delabel_switch_stan(ddr, K = 3, R = 2)
   chains_sampled_equal(out)
   df <- as.data.frame(posterior::as_draws_df(out))
   expect_equal(unique(df[["meanpi[1]"]]), 0.3)
