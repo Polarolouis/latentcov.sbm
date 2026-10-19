@@ -429,14 +429,12 @@ delabel_switch_stan <- function(
   start_alpha_var <- head(var_idx_alphas, 1)
   end_alpha_var <- tail(var_idx_alphas, 1)
 
-  mean_alphas_array <- apply(
-    posterior::subset_draws(draws, variable = "alpha"),
-    2:3,
-    mean
-  )
-
-  alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) {
-    matrix(mean_alphas_array[row, ], nrow = K, ncol = R)
+  alpha_matrices <- lapply(seq(posterior::nchains(draws)), function(chain_idx) {
+    matrix(
+      extract_parameter_draws(draws, variable = "alpha"),
+      nrow = K,
+      ncol = R
+    )
   })
 
   if (is.null(alpha_ref)) {
