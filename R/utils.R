@@ -369,6 +369,7 @@ extract_MAP_draws <- function(draws, variable = "Z", factor = TRUE, ...) {
 #' @param ... Arguments passed to \code{posterior::subset_draws}
 #'
 #' @inheritDotParams posterior::subset_draws
+#' @importFrom stats median
 #'
 #' @return the extracted parameter
 extract_parameter_draws <- function(
