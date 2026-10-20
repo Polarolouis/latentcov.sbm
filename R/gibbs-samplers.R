@@ -247,7 +247,7 @@ gibbs_sampling_lbm_poisson <- function(
       )
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
-      current_W_memb <- known_W
+      current_W_memb <- known_membership_to_labels(known_W)
     }
     W <- t(sapply(current_W_memb, function(W_label) {
       (seq(R) == W_label) * 1
@@ -266,7 +266,7 @@ gibbs_sampling_lbm_poisson <- function(
       )
       current_Z_memb <- sample_Z_given_alpha_P_Y_W(probs = Z_post_probs)
     } else {
-      current_Z_memb <- known_Z
+      current_Z_memb <- known_membership_to_labels(known_Z)
     }
     Z <- t(sapply(current_Z_memb, function(Z_label) {
       (seq(K) == Z_label) * 1
@@ -594,7 +594,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
       )
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
-      current_W_memb <- known_W
+      current_W_memb <- known_membership_to_labels(known_W)
     }
     W <- t(sapply(current_W_memb, function(W_label) {
       (seq(R) == W_label) * 1
@@ -613,7 +613,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
       )
       current_Z_memb <- sample_Z_given_alpha_P_Y_W(probs = Z_post_probs)
     } else {
-      current_Z_memb <- known_Z
+      current_Z_memb <- known_membership_to_labels(known_Z)
     }
     Z <- t(sapply(current_Z_memb, function(Z_label) {
       (seq(K) == Z_label) * 1
@@ -766,6 +766,9 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   )
 
   # Initialization
+  prov_Y <- Y
+  mask <- (!is.na(Y)) * 1L
+  Y <- replace(Y, is.na(Y), 0)
   Theta <- solve(Sigma)
 
   ## Hyperparameters
@@ -907,7 +910,7 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
       W_post_probs <- row_normalize_matrix(W_unormalized_log_probs, tol = tol)
       current_W_memb <- sample_W_given_alpha_rho_Y_Z(probs = W_post_probs)
     } else {
-      current_W_memb <- known_W
+      current_W_memb <- known_membership_to_labels(known_W)
     }
     W <- t(sapply(current_W_memb, function(W_label) {
       (seq(R) == W_label) * 1
@@ -919,6 +922,7 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
       Y = Y,
       alpha = current_alpha,
       W = W,
+      mask = mask,
       P = current_P,
       tol = tol
     )

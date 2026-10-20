@@ -2,7 +2,6 @@
 % Please edit documentation in R/utils.R
 \name{delabel_switch_stan}
 \alias{delabel_switch_stan}
-\alias{delabel_switch_stan_per_iteration}
 \title{Correct label switching across MCMC chains}
 \usage{
 delabel_switch_stan(
@@ -10,14 +9,6 @@ delabel_switch_stan(
   K,
   R,
   alpha_ref = NULL,
-  Psi_function = default_Psi_function,
-  find_permutations = find_permutation_alphas_L2
-)
-
-delabel_switch_stan_per_iteration(
-  draws,
-  K,
-  R,
   Psi_function = default_Psi_function,
   find_permutations = find_permutation_alphas_L2
 )
@@ -29,6 +20,9 @@ iteration \eqn{\times} chain \eqn{\times} parameter.}
 \item{K}{Number of row groups.}
 
 \item{R}{Number of column groups.}
+
+\item{alpha_ref}{(Optional) a matrix of size \eqn{K\times R} used to align
+the chains.}
 
 \item{Psi_function}{A function building the contrast matrix used to
 rotate the \code{P} coordinates. Defaults to \code{\link[=default_Psi_function]{default_Psi_function()}}.}
@@ -47,12 +41,6 @@ label-switching problem. Permutations are estimated on the posterior means
 of the connectivity matrix \code{alpha}, then propagated to \code{rho}, \code{pi}, \code{P},
 \code{Z} and \code{W} parameters.
 }
-\section{Functions}{
-\itemize{
-\item \code{delabel_switch_stan_per_iteration()}: Alias kept for backward compatibility.
-
-}}
 \seealso{
 \code{\link[=lbm_results_to_stan_draws]{lbm_results_to_stan_draws()}}, \code{\link[=find_permutation_alphas]{find_permutation_alphas()}}
 }
-\keyword{internal}

@@ -85,7 +85,15 @@ build_covariance_matrix <- function(draws, n, K, corr = FALSE) {
   # Function implementation would go here
   P_draws <- posterior::subset_draws(draws, variable = "P")
   P_array <- aperm(
-    array(P_draws, dim = c(200, 5, n, K - 1)),
+    array(
+      P_draws,
+      dim = c(
+        posterior::niterations(P_draws),
+        posterior::nchains(P_draws),
+        n,
+        K - 1
+      )
+    ),
     c(3, 4, 1, 2)
   )
   dimnames(P_array) <- list(
@@ -172,6 +180,12 @@ list_arrays_to_stan <- function(array_list) {
       }
     })
   )
+  if (is.null(out)) {
+    niter <- max(vapply(array_list, function(x) dim(x)[1], integer(1)))
+    out <- matrix(numeric(0), nrow = niter, ncol = 0)
+    dimnames(out) <- list(Iteration = seq_len(niter), Parameter = character(0))
+    return(out)
+  }
   names(dimnames(out)) <- c("Iteration", "Parameter")
   return(out)
 }
@@ -315,6 +329,65 @@ perm_matrix_from_order <- function(order) {
   })
 }
 
+#' Helper function to extract MAP clustering variables
+#'
+#' @param draws A STAN format draw array
+#' @param variable A string either "Z", "W"
+#' @param factor A boolean
+#'
+#' @param ... Arguments passed to \code{posterior::subset_draws}
+#'
+#' @inheritDotParams posterior::subset_draws
+#'
+#' @return the extracted parameter
+extract_MAP_draws <- function(draws, variable = "Z", factor = TRUE, ...) {
+  label_draws <- posterior::subset_draws(draws, variable = variable)
+
+  all_labels <- sort(unique(as.vector(label_draws)))
+
+  Z_MAP_ind <- label_draws |>
+    apply(3, function(t) {
+      prop.table(table(factor(x = as.vector(t), levels = all_labels)))
+    }) |>
+    t()
+  if (factor) {
+    return(factor(apply(Z_MAP_ind, 1, which.max), levels = all_labels))
+  } else {
+    return(Z_MAP_ind)
+  }
+}
+
+#' Helper function to extract parameter with a transformation
+#'
+#' @param draws A STAN format draw array
+#' @param variable A string naming a variable to select from the draws array
+#' @param regex A boolean, default to FALSE, specifying if the `variable` is a
+#' regular expression
+#' @param transformation The transformation to apply to summarize the data.
+#' Defaults to `median`
+#'
+#' @param ... Arguments passed to \code{posterior::subset_draws}
+#'
+#' @inheritDotParams posterior::subset_draws
+#' @importFrom stats median
+#'
+#' @return the extracted parameter
+extract_parameter_draws <- function(
+  draws,
+  variable,
+  regex = FALSE,
+  transformation = median,
+  ...
+) {
+  parameter_draws <- posterior::subset_draws(
+    draws,
+    variable = variable,
+    regex = regex
+  )
+
+  return(apply(parameter_draws, 3, transformation))
+}
+
 #' Correct label switching across MCMC chains
 #'
 #' Relabels the block indices of every MCMC chain (except the first, used as
@@ -327,6 +400,8 @@ perm_matrix_from_order <- function(order) {
 #'   iteration \eqn{\times} chain \eqn{\times} parameter.
 #' @param K Number of row groups.
 #' @param R Number of column groups.
+#' @param alpha_ref (Optional) a matrix of size \eqn{K\times R} used to align
+#' the chains.
 #' @param Psi_function A function building the contrast matrix used to
 #'   rotate the `P` coordinates. Defaults to [default_Psi_function()].
 #' @param find_permutations A function estimating the row and column
@@ -355,14 +430,15 @@ delabel_switch_stan <- function(
   start_alpha_var <- head(var_idx_alphas, 1)
   end_alpha_var <- tail(var_idx_alphas, 1)
 
-  mean_alphas_array <- apply(
-    posterior::subset_draws(draws, variable = "alpha"),
-    2:3,
-    mean
-  )
-
-  alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) {
-    matrix(mean_alphas_array[row, ], nrow = K, ncol = R)
+  alpha_matrices <- lapply(seq(posterior::nchains(draws)), function(chain_idx) {
+    matrix(
+      extract_parameter_draws(
+        posterior::subset_draws(draws, chain = chain_idx),
+        variable = "alpha"
+      ),
+      nrow = K,
+      ncol = R
+    )
   })
 
   if (is.null(alpha_ref)) {
@@ -378,7 +454,7 @@ delabel_switch_stan <- function(
   draws_delabeled <- draws
   Psi <- Psi_function(K)
 
-  # Process each chain starting from chain 2 (chain 1 is the reference)
+  # Process every chain, each one being aligned onto the first (or alpha_ref)
   for (chain_idx in seq_len(posterior::nchains(draws_delabeled))) {
     perm <- permutations_list[[chain_idx]]
     row_perm <- perm$row_perm
@@ -492,9 +568,9 @@ delabel_switch_stan_true <- function(
   draws_delabeled <- draws
   Psi <- Psi_function(K)
 
-  # Process each chain starting from chain 2 (chain 1 is the reference)
-  for (chain_idx in 2:dim(draws)[2]) {
-    perm <- permutations_list[[chain_idx - 1]]
+  # Process every chain, each one being aligned onto the true alpha
+  for (chain_idx in seq_len(posterior::nchains(draws_delabeled))) {
+    perm <- permutations_list[[chain_idx]]
     row_perm <- perm$row_perm
     col_perm <- perm$col_perm
 
@@ -573,122 +649,6 @@ delabel_switch_stan_true <- function(
 
   return(draws_delabeled)
 }
-
-#' @describeIn delabel_switch_stan Alias kept for backward compatibility.
-#' @keywords internal
-delabel_switch_stan_per_iteration <- function(
-  draws,
-  K,
-  R,
-  Psi_function = default_Psi_function,
-  find_permutations = find_permutation_alphas_L2
-) {
-  stopifnot("There must be at least two chains" = dim(draws)[2] > 1)
-
-  var_idx_alphas <- which(startsWith(dimnames(draws)[[3]], "alpha"))
-  start_alpha_var <- head(var_idx_alphas, 1)
-  end_alpha_var <- tail(var_idx_alphas, 1)
-
-  mean_alphas_array <- apply(draws[,, var_idx_alphas], 2:3, mean)
-
-  alpha_matrices <- lapply(seq_len(nrow(mean_alphas_array)), function(row) {
-    matrix(mean_alphas_array[row, ], nrow = K, ncol = R)
-  })
-  alpha_ref <- alpha_matrices[[1]]
-  alpha_matrices <- alpha_matrices[-1]
-
-  permutations_list <- lapply(
-    alpha_matrices,
-    find_permutations,
-    alpha_ref = alpha_ref
-  )
-
-  # Apply permutations to relabel all chains
-  draws_delabeled <- draws
-  Psi <- Psi_function(K)
-
-  # Process each chain starting from chain 2 (chain 1 is the reference)
-  for (chain_idx in 2:dim(draws)[2]) {
-    perm <- permutations_list[[chain_idx - 1]]
-    row_perm <- perm$row_perm
-    col_perm <- perm$col_perm
-
-    # Apply row permutation to alpha
-    for (iter in seq(posterior::niterations(draws))) {
-      alpha_matrix <- matrix(
-        draws[iter, chain_idx, start_alpha_var:end_alpha_var],
-        nrow = K,
-        ncol = R
-      )
-      alpha_matrix <- alpha_matrix[row_perm, col_perm, drop = FALSE]
-      draws_delabeled[
-        iter,
-        chain_idx,
-        start_alpha_var:end_alpha_var
-      ] <- as.vector(alpha_matrix)
-    }
-
-    # Apply column permutation to other block-indexed parameters
-
-    ## rho
-
-    rho_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "rho"))
-    draws_delabeled[, chain_idx, rho_idx] <- draws[, chain_idx, rho_idx][,,
-      col_perm,
-      drop = FALSE
-    ]
-
-    ##  pi (if they exists)
-    pi_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "pi"))
-    if (length(pi_idx) > 0) {
-      draws_delabeled[, chain_idx, pi_idx] <- draws[, chain_idx, pi_idx][,,
-        row_perm,
-        drop = FALSE
-      ]
-    }
-
-    ## P
-    P_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "P"))
-
-    Perm_mat <- perm_matrix_from_order(row_perm)
-    T_c <- round(Psi %*% Perm_mat %*% t(Psi), digits = 10)
-    nind <- length(P_idx) / (K - 1)
-    for (it in seq_len(posterior::niterations(draws_delabeled))) {
-      # reconstruction de la matrice P
-      Pmat <- matrix(
-        draws[it, chain_idx, P_idx],
-        nrow = nind,
-        ncol = K - 1,
-        byrow = FALSE
-      )
-
-      # permutation
-      Pmat <- Pmat %*% t(T_c)
-
-      # remise dans le draws_array
-      draws_delabeled[it, chain_idx, P_idx] <- c(Pmat)
-    }
-
-    # Z
-    Z_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "Z"))
-    chain_Z <- draws[, chain_idx, Z_idx]
-    draws_delabeled[, chain_idx, Z_idx] <- array(
-      row_perm[chain_Z],
-      dim = dim(chain_Z)
-    )
-
-    # W
-    W_idx <- which(startsWith(dimnames(draws_delabeled)[[3]], "W"))
-    chain_W <- draws[, chain_idx, W_idx]
-    draws_delabeled[, chain_idx, W_idx] <- array(
-      col_perm[chain_W],
-      dim = dim(chain_W)
-    )
-  }
-
-  return(draws_delabeled)
-}
-
 
 #' Convert LBM Gibbs sampling results into stan-style posterior draws
 #'
@@ -744,8 +704,8 @@ lbm_results_to_stan_draws <- function(
       draws,
       K = K,
       R = R,
-      Psi_function,
-      find_permutation
+      Psi_function = Psi_function,
+      find_permutations = find_permutation
     )
   }
   if (apply_burnin_thinning) {
@@ -778,21 +738,24 @@ ARI_table <- function(draws, true, label = "Z") {
     true <- .rev_one_hot(true)
   }
 
-  aritable <- t(sapply(
-    seq(posterior::niterations(label_draws)),
-    function(iter) {
-      sapply(seq(posterior::nchains(label_draws)), function(chain_idx) {
-        aricode::ARI(as.vector(label_draws[iter, chain_idx, ]), true)
-      })
+  niter <- posterior::niterations(label_draws)
+  nch <- posterior::nchains(label_draws)
+  aritable <- matrix(0, nrow = niter, ncol = nch)
+  for (iter in seq_len(niter)) {
+    for (chain_idx in seq_len(nch)) {
+      aritable[iter, chain_idx] <- aricode::ARI(
+        as.vector(label_draws[iter, chain_idx, ]),
+        true
+      )
     }
-  ))
+  }
 
   aritable <- array(
     aritable,
-    dim(aritable),
+    dim = c(niter, nch),
     dimnames = list(
-      "Iteration" = seq(posterior::niterations(draws)),
-      "Chains" = seq(posterior::nchains(draws))
+      "Iteration" = seq_len(niter),
+      "Chains" = seq_len(nch)
     )
   )
   return(aritable)
@@ -863,75 +826,6 @@ check_lbm_identifiability <- function(netMat, alpha, pi, rho, K, R) {
   )
 }
 
-#' A function to compute a posteriori the pi_i probabilities
-#'
-#' @param draws a Stan draw object containing all the \code{P[i,k]} latent position
-#' @param transformation The transformation to compute the pi_i from \code{P[i,.]}.
-#' Defaults to ilrInv
-#'
-#' @return The draws object with the \code{pi[i,k]} variables added.
-compute_pi_from_P <- function(draws, transformation = ilrInv) {
-  P_draws <- posterior::subset_draws(
-    draws,
-    variable = "P"
-  )
-
-  P_draws_chain_list <- lapply(
-    seq_len(posterior::nchains(P_draws)),
-    function(chain_idx) posterior::subset_draws(P_draws, chain = chain_idx)
-  )
-
-  P_df <- posterior::as_draws_df(P_draws)
-
-  P_names <- grep("^P\\[", names(P_df), value = TRUE)
-
-  # Extraire i et k
-  idx <- do.call(
-    rbind,
-    regmatches(
-      P_names,
-      regexec("^P\\[([0-9]+),([0-9]+)\\]$", P_names)
-    )
-  )
-
-  i_vals <- as.integer(idx[, 2])
-  k_vals <- as.integer(idx[, 3])
-
-  I <- max(i_vals)
-  K <- max(k_vals)
-
-  list_of_pi_draws_per_chain <- lapply(
-    seq_len(posterior::nchains(P_draws)),
-    function(chain_idx) {
-      current_P_chain <- P_draws_chain_list[[chain_idx]]
-      posterior::as_draws_array(do.call(
-        "cbind",
-        lapply(seq_len(I), function(i) {
-          cols <- P_names[i_vals == i]
-          cols <- cols[order(k_vals[i_vals == i])]
-
-          pi_i_chain_matrix <- current_P_chain[,, cols] |>
-            matrix(ncol = K - 1) |>
-            ilrInv()
-
-          colnames(pi_i_chain_matrix) <- paste0(
-            "pi[",
-            i,
-            ",",
-            seq_len(ncol(pi_i_chain_matrix)),
-            "]"
-          )
-
-          return(pi_i_chain_matrix)
-        })
-      ))
-    }
-  )
-
-  pi_draws <- posterior::bind_draws(list_of_pi_draws_per_chain, along = "chain")
-  return(posterior::bind_draws(draws, pi_draws, along = "variable"))
-}
-
 #' A function to compute a posteriori the mean \eqn{\hat{\pi}} from
 #' \eqn{\hat{Z}} at each iteration
 #'
@@ -944,13 +838,19 @@ compute_pi_from_P <- function(draws, transformation = ilrInv) {
 compute_meanpi <- function(draws, K = NULL) {
   Z_draws <- posterior::subset_draws(draws, variable = "Z")
   if (is.null(K)) {
-    Z_levels <- Z_draws |>
-      as.vector() |>
-      unique() |>
-      sort()
-  } else {
-    Z_levels <- seq(K)
+    P_names <- posterior::subset_draws(draws, variable = "P") |>
+      posterior::variables()
+    all_P_matches <- regmatches(
+      P_names,
+      regexec(pattern = "P\\[[0-9]+,([0-9]+)\\]", text = P_names)
+    )
+    K <- max(
+      sapply(all_P_matches, function(vec) vec[2]) |> unique() |> as.integer()
+    ) +
+      1
   }
+
+  Z_levels <- seq(K)
   meanpi_draws <- Z_draws |>
     apply(c(1, 2), function(x) {
       as.vector(prop.table(table(factor(
@@ -1078,4 +978,17 @@ mask_NA <- function(Y, replace_value = 0) {
 #' @return Y_obs the matrix Y with its NAs masked and replaced
 mask_observed <- function(Y, mask) {
   replace(Y, is.na(Y), 0) * mask
+}
+
+
+#' Convert a hard membership argument (either a one-hot indicator matrix
+#' `n x K` or a vector of labels) into a plain vector of labels, which is the
+#' internal representation carried through the Gibbs updates.
+#'
+#' @param memb an `n x K` matrix
+known_membership_to_labels <- function(memb) {
+  if (is.matrix(memb)) {
+    return(apply(memb, 1, which.max))
+  }
+  as.integer(memb)
 }
