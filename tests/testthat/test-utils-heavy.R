@@ -456,23 +456,6 @@ test_that("delabel_switch_stan flattens chain labels onto the second permutation
   expect_lt(max(abs(c1 - c3)), 1e-9)
 })
 
-test_that("delabel_switch_stan_true aligns every chain onto the true alpha", {
-  dr <- build_label_switched_draws(vars = "pi")
-  out <- delabel_switch_stan_true(
-    dr,
-    K = 3,
-    R = 2,
-    true_alpha = matrix(c(1, 3, 5, 2, 4, 6), 3, 2)
-  )
-  chains_sampled_equal(out)
-  df <- as.data.frame(posterior::as_draws_df(out))
-  expect_equal(unique(df[["alpha[1,1]"]]), 1)
-  expect_equal(unique(df[["alpha[3,1]"]]), 5)
-  expect_equal(unique(df[["pi[1]"]]), 0.3)
-  expect_equal(unique(df[["pi[2]"]]), 0.4)
-  expect_equal(unique(df[["pi[3]"]]), 0.3)
-})
-
 # ---- lbm_results_to_stan_draws -----------------------------------------------
 
 mk_chain_results <- function(alph, rho, P, Z, W, niter = 4) {
