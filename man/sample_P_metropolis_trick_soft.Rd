@@ -11,6 +11,7 @@ sample_P_metropolis_trick_soft(
   sigma2,
   minibatch = TRUE,
   niter_metropolis = 50L,
+  Theta = NULL,
   ...
 )
 }
@@ -30,6 +31,9 @@ probabilities (rows sum to 1) in lieu of a hard indicator matrix}
 
 \item{niter_metropolis}{an integer specifying the number of metropolis iterations to perform. Defaults to 50.}
 
+\item{Theta}{Optional. The precision matrix \eqn{\Sigma^{-1}}. If \code{NULL}
+(default) it is computed once as \code{solve(Sigma)}.}
+
 \item{...}{Used to pass various args}
 }
 \value{
@@ -42,4 +46,10 @@ proposal (as in \code{\link[=sample_P_metropolis_trick]{sample_P_metropolis_tric
 hard assignment \code{which.max(Z[i, ])}, the acceptance ratio weights the
 categorical log-likelihood over all blocks by the soft memberships of row
 \code{i}.
+}
+\details{
+This pure-R implementation follows the same RNG stream as
+\code{\link[=sample_P_metropolis_trick_soft_cpp_fast]{sample_P_metropolis_trick_soft_cpp_fast()}} (permutation via
+\code{order(runif(n))} and per-coordinate normal plus one uniform per Metropolis
+step), so that with an identical seed the two generate the same sequence.
 }

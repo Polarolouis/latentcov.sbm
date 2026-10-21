@@ -325,3 +325,30 @@ test_that("both fast samplers draw per-coordinate normals plus one uniform", {
   ))
   expect_identical(.Random.seed, expected(322L))
 })
+
+test_that("the soft R sampler is RNG-lockstep with the fast soft C++ sampler", {
+  # `sample_P_metropolis_trick_soft` is a pure-R implementation that consumes
+  # R's RNG exactly like `sample_P_metropolis_trick_soft_cpp_fast` (same
+  # permutation and per-step draws), so with an identical seed the two must
+  # leave R's RNG in the same state and produce positions that agree up to
+  # floating-point rounding of the conditional mean.
+  Sigma <- Sigma_fx
+  run_both <- function(seed) {
+    set.seed(seed)
+    r <- sample_P_metropolis_trick_soft(
+      .P, Z_fx_soft, Sigma, .sigma2, minibatch = TRUE, niter_metropolis = .niter
+    )
+    seed_r <- .Random.seed
+    set.seed(seed)
+    fast <- sample_P_metropolis_trick_soft_cpp_fast(
+      .P, Z_fx_soft, Sigma, .sigma2, minibatch = TRUE, niter_metropolis = .niter
+    )
+    list(
+      seed_identical = identical(seed_r, .Random.seed),
+      maxdiff = max(abs(unname(r) - unname(fast)))
+    )
+  }
+  res <- run_both(4242L)
+  expect_true(res$seed_identical)
+  expect_lt(res$maxdiff, 1e-8)
+})
