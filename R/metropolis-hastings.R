@@ -202,3 +202,97 @@ sample_P_metropolis_trick_soft <- function(
   }
   return(out_P)
 }
+
+#' Fast Metropolis sampler for P with the clever proposition (precision-based)
+#'
+#' C++ Metropolis-Hastings sampler for the latent positions `P` that proposes
+#' every row from its full conditional using the **precision** matrix
+#' \eqn{\Theta = \Sigma^{-1}} instead of `Sigma`.
+#'
+#' For each row \eqn{i} the full conditional of `P[i, ]` is
+#' \deqn{N\!\left(-\frac{1}{\Theta_{ii}} \Theta_{i,-i} P_{-i},\;
+#'   \frac{\sigma^2}{\Theta_{ii}} I\right),}
+#' so the conditional mean is obtained with a single matrix-vector product
+#' (\eqn{O(nK)}) rather than a fresh \eqn{O(n^3)} solve of
+#' `Sigma[-i,-i]` per row (as `sample_P_metropolis_trick_cpp()` does).
+#' Since the proposal is drawn from this full conditional, the Gaussian terms
+#' cancel in the acceptance ratio and only the multinomial prior ratio
+#' remains, exactly as in `sample_P_metropolis_trick_cpp()`.
+#'
+#' @inheritParams sample_P_metropolis_trick_cpp
+#' @param Theta Optional. The precision matrix \eqn{\Sigma^{-1}}. If `NULL`
+#'   (default) it is computed once as `solve(Sigma)`, which is only carried
+#'   once per call and therefore negligible.
+#'
+#' @return an updated matrix of latent positions, of the same size as `P`
+#'
+#' @seealso [sample_P_metropolis_trick_cpp()] for the `Sigma`-based analogue,
+#'   [sample_P_metropolis_trick_soft_cpp_fast()] for the soft-membership
+#'   version.
+#' @export
+sample_P_metropolis_trick_cpp_fast <- function(
+  P,
+  Z,
+  Sigma,
+  sigma2,
+  minibatch = TRUE,
+  niter_metropolis = 50L,
+  Theta = NULL,
+  ...
+) {
+  if (is.null(Theta)) {
+    Theta <- solve(Sigma)
+  }
+  sample_P_metropolis_trick_cpp_fast_impl(
+    P = P,
+    Z = Z,
+    Theta = Theta,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
+  )
+}
+
+#' Fast Metropolis sampler for P under soft memberships (precision-based)
+#'
+#' Precision-based, C++ analogue of [sample_P_metropolis_trick_soft()] for the
+#' mixed-membership latent covariance SBM. Proposes every row of `P` from its
+#' full conditional given the precision matrix `Theta` (see
+#' [sample_P_metropolis_trick_cpp_fast()]) and accepts with the
+#' *mixed-membership* ratio
+#' \deqn{\sum_k Z^\text{soft}_{i,k}\,
+#'   \left[\log p_k(P_i^\text{cand}) - \log p_k(P_i)\right],}
+#' where \eqn{p_k} is the membership probability of block \eqn{k} obtained
+#' through the inverse pivot coordinates.
+#'
+#' @inheritParams sample_P_metropolis_trick_cpp_fast
+#' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
+#'   probabilities (rows sum to 1) in lieu of a hard indicator matrix
+#'
+#' @return an updated matrix of latent positions, of the same size as `P`
+#'
+#' @seealso [sample_P_metropolis_trick_soft()] for the `Sigma`-based analogue,
+#'   [sample_P_metropolis_trick_cpp_fast()] for the hard-membership version.
+#' @export
+sample_P_metropolis_trick_soft_cpp_fast <- function(
+  P,
+  Z,
+  Sigma,
+  sigma2,
+  minibatch = TRUE,
+  niter_metropolis = 50L,
+  Theta = NULL,
+  ...
+) {
+  if (is.null(Theta)) {
+    Theta <- solve(Sigma)
+  }
+  sample_P_metropolis_trick_soft_cpp_fast_impl(
+    P = P,
+    Z = Z,
+    Theta = Theta,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
+  )
+}
