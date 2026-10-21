@@ -280,12 +280,22 @@ test_that("the fast samplers share the RNG stream of the Sigma-based trick", {
   run_both <- function(seed) {
     set.seed(seed)
     trick <- latentcov.sbm:::sample_P_metropolis_trick_cpp(
-      .P, Z_fx, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = .niter
+      .P,
+      Z_fx,
+      Sigma,
+      .sigma2,
+      minibatch = FALSE,
+      niter_metropolis = .niter
     )
     seed_trick <- .Random.seed
     set.seed(seed)
     fast <- sample_P_metropolis_trick_cpp_fast(
-      .P, Z_fx, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = .niter
+      .P,
+      Z_fx,
+      Sigma,
+      .sigma2,
+      minibatch = FALSE,
+      niter_metropolis = .niter
     )
     list(
       seed_identical = identical(seed_trick, .Random.seed),
@@ -316,12 +326,22 @@ test_that("both fast samplers draw per-coordinate normals plus one uniform", {
   }
   set.seed(321L)
   invisible(sample_P_metropolis_trick_cpp_fast(
-    .P, Z_fx, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = niter
+    .P,
+    Z_fx,
+    Sigma,
+    .sigma2,
+    minibatch = FALSE,
+    niter_metropolis = niter
   ))
   expect_identical(.Random.seed, expected(321L))
   set.seed(322L)
   invisible(sample_P_metropolis_trick_soft_cpp_fast(
-    .P, Z_fx_soft, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = niter
+    .P,
+    Z_fx_soft,
+    Sigma,
+    .sigma2,
+    minibatch = FALSE,
+    niter_metropolis = niter
   ))
   expect_identical(.Random.seed, expected(322L))
 })
@@ -336,12 +356,22 @@ test_that("the soft R sampler is RNG-lockstep with the fast soft C++ sampler", {
   run_both <- function(seed) {
     set.seed(seed)
     r <- sample_P_metropolis_trick_soft(
-      .P, Z_fx_soft, Sigma, .sigma2, minibatch = TRUE, niter_metropolis = .niter
+      .P,
+      Z_fx_soft,
+      Sigma,
+      .sigma2,
+      minibatch = TRUE,
+      niter_metropolis = .niter
     )
     seed_r <- .Random.seed
     set.seed(seed)
     fast <- sample_P_metropolis_trick_soft_cpp_fast(
-      .P, Z_fx_soft, Sigma, .sigma2, minibatch = TRUE, niter_metropolis = .niter
+      .P,
+      Z_fx_soft,
+      Sigma,
+      .sigma2,
+      minibatch = TRUE,
+      niter_metropolis = .niter
     )
     list(
       seed_identical = identical(seed_r, .Random.seed),

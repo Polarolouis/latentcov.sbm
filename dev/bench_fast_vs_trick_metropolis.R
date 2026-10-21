@@ -47,7 +47,9 @@ make_data <- function(K, npc, n2 = 30, sigma2 = 1) {
 
   P0 <- matrix(rnorm(n1 * (K - 1)), nrow = n1)
   # hard memberships: row j belongs to block ((j-1) %% K) + 1
-  Z0 <- t(sapply(seq_len(n1), function(j) (seq_len(K) == ((j - 1) %% K) + 1) * 1))
+  Z0 <- t(sapply(seq_len(n1), function(j) {
+    (seq_len(K) == ((j - 1) %% K) + 1) * 1
+  }))
   # soft memberships: slight mass on neighbouring blocks (still row-stochastic)
   Z0s <- Z0
   for (j in seq_len(n1)) {
@@ -56,8 +58,13 @@ make_data <- function(K, npc, n2 = 30, sigma2 = 1) {
     Z0s[j, (k %% K) + 1] <- 0.2
   }
   list(
-    K = K, n1 = n1, sigma2 = sigma2,
-    Sigma = Sigma, P = P0, Z_hard = Z0, Z_soft = Z0s,
+    K = K,
+    n1 = n1,
+    sigma2 = sigma2,
+    Sigma = Sigma,
+    P = P0,
+    Z_hard = Z0,
+    Z_soft = Z0s,
     niter_metropolis = 10L
   )
 }
@@ -71,32 +78,50 @@ cases <- list(
 
 # --- 1. Behaviour: RNG lockstep + position agreement ------------------------
 cat("\n=================== 1. BEHAVIOUR / CORRECTNESS ===================\n")
-cat("(same seed -> same .Random.seed stream, positions agree up to roundoff)\n\n")
+cat(
+  "(same seed -> same .Random.seed stream, positions agree up to roundoff)\n\n"
+)
 
 run_both <- function(data, hard = TRUE, minibatch = TRUE, seed = 4242L) {
   set.seed(seed)
   if (hard) {
     r <- sample_P_metropolis_trick_cpp_fast(
-      data$P, data$Z_hard, data$Sigma, data$sigma2,
-      minibatch = minibatch, niter_metropolis = data$niter_metropolis
+      data$P,
+      data$Z_hard,
+      data$Sigma,
+      data$sigma2,
+      minibatch = minibatch,
+      niter_metropolis = data$niter_metropolis
     )
     seed_fast <- .Random.seed
     set.seed(seed)
     ref <- sample_P_metropolis_trick_cpp(
-      data$P, data$Z_hard, data$Sigma, data$sigma2,
-      minibatch = minibatch, niter_metropolis = data$niter_metropolis
+      data$P,
+      data$Z_hard,
+      data$Sigma,
+      data$sigma2,
+      minibatch = minibatch,
+      niter_metropolis = data$niter_metropolis
     )
     label <- "hard  : fast C++ (~Theta) vs trick C++ (~solve Sigma)"
   } else {
     r <- sample_P_metropolis_trick_soft_cpp_fast(
-      data$P, data$Z_soft, data$Sigma, data$sigma2,
-      minibatch = minibatch, niter_metropolis = data$niter_metropolis
+      data$P,
+      data$Z_soft,
+      data$Sigma,
+      data$sigma2,
+      minibatch = minibatch,
+      niter_metropolis = data$niter_metropolis
     )
     seed_fast <- .Random.seed
     set.seed(seed)
     ref <- sample_P_metropolis_trick_soft(
-      data$P, data$Z_soft, data$Sigma, data$sigma2,
-      minibatch = minibatch, niter_metropolis = data$niter_metropolis
+      data$P,
+      data$Z_soft,
+      data$Sigma,
+      data$sigma2,
+      minibatch = minibatch,
+      niter_metropolis = data$niter_metropolis
     )
     label <- "soft  : fast C++ (~Theta) vs pure-R soft (~solve Sigma)"
   }
@@ -114,11 +139,17 @@ for (nm in names(cases)) {
     s <- run_both(d, hard = FALSE, minibatch = mb)
     cat(sprintf(
       "[%s minibatch=%s]\n  %s\n    seed identical: %s | max |diff| ~ %.2e\n",
-      nm, mb, h$label, h$seed_identical, h$maxdiff
+      nm,
+      mb,
+      h$label,
+      h$seed_identical,
+      h$maxdiff
     ))
     cat(sprintf(
       "  %s\n    seed identical: %s | max |diff| ~ %.2e\n",
-      s$label, s$seed_identical, s$maxdiff
+      s$label,
+      s$seed_identical,
+      s$maxdiff
     ))
     if (!h$seed_identical || !s$seed_identical) {
       stop("RNG stream NOT in sync — fast/trick diverged!")
@@ -134,7 +165,9 @@ cat("\nAll fast samplers are RNG-lockstep with their trick reference.\n")
 cat("\n=================== 2. SPEED ======================================\n")
 cat("(one full Metropolis pass over all rows; median of timings)\n")
 cat("NOTE: the Sigma-based trick reference is O(n^3) per row, so the timing\n")
-cat("grid is limited to sizes where it stays tractable; behaviour (section 1)\n")
+cat(
+  "grid is limited to sizes where it stays tractable; behaviour (section 1)\n"
+)
 cat("already covered every size.\n\n")
 
 # Pre-compute precision matrices so the per-call solve() is not timed (it is
@@ -159,17 +192,29 @@ times_grid <- c("n=120 K=3" = 10, "n=200 K=4" = 5)
 bench_one <- function(d, minibatch, times) {
   bm <- microbenchmark(
     "trick (Sigma)" = sample_P_metropolis_trick_cpp(
-      P = d$P, Z = d$Z_hard, Sigma = d$Sigma, sigma2 = d$sigma2,
-      minibatch = minibatch, niter_metropolis = d$nit
+      P = d$P,
+      Z = d$Z_hard,
+      Sigma = d$Sigma,
+      sigma2 = d$sigma2,
+      minibatch = minibatch,
+      niter_metropolis = d$nit
     ),
     "fast  (Theta)" = sample_P_metropolis_trick_cpp_fast(
-      P = d$P, Z = d$Z_hard, Sigma = d$Sigma, Theta = d$Theta,
-      sigma2 = d$sigma2, minibatch = minibatch,
+      P = d$P,
+      Z = d$Z_hard,
+      Sigma = d$Sigma,
+      Theta = d$Theta,
+      sigma2 = d$sigma2,
+      minibatch = minibatch,
       niter_metropolis = d$nit
     ),
     "fast soft (Theta)" = sample_P_metropolis_trick_soft_cpp_fast(
-      P = d$P, Z = d$Z_soft, Sigma = d$Sigma, Theta = d$Theta,
-      sigma2 = d$sigma2, minibatch = minibatch,
+      P = d$P,
+      Z = d$Z_soft,
+      Sigma = d$Sigma,
+      Theta = d$Theta,
+      sigma2 = d$sigma2,
+      minibatch = minibatch,
       niter_metropolis = d$nit
     ),
     times = times,
@@ -179,7 +224,11 @@ bench_one <- function(d, minibatch, times) {
   md <- setNames(s$median, s$expr)
   cat(sprintf(
     "[%s minibatch=%s niter=%d]  trick=%.0f ms  fast=%.1f ms  fast-soft=%.1f ms\n",
-    nm, minibatch, d$nit, md[["trick (Sigma)"]], md[["fast  (Theta)"]],
+    nm,
+    minibatch,
+    d$nit,
+    md[["trick (Sigma)"]],
+    md[["fast  (Theta)"]],
     md[["fast soft (Theta)"]]
   ))
   cat(sprintf(

@@ -191,7 +191,9 @@ sample_P_metropolis_trick_soft <- function(
       # Full conditional (see cond_Pi_fast), recomputed because the mean
       # depends on the current P.
       ci <- cond_Pi_fast(running_P, Theta, sigma2, i)
-      if (is.null(sd)) sd <- sqrt(ci$cov[1, 1])
+      if (is.null(sd)) {
+        sd <- sqrt(ci$cov[1, 1])
+      }
       Pi_candidate <- ci$mean + rnorm(m) * sd
       Pi_old <- running_P[i, ]
 
