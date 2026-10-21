@@ -391,7 +391,13 @@ arma::mat sample_P_metropolis_trick_cpp_fast(arma::mat &P, arma::mat &Z,
         mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
       }
 
-      rowvec Pi_candidate = mu + randn<rowvec>(q) * sd;
+      // Draw along R's RNG stream exactly as rmvnorm does in the Sigma-based
+      // trick samplers (one Rcpp::rnorm per coordinate), so that the two share
+      // the same RNG consumption and the same `.Random.seed` evolution.
+      rowvec Pi_candidate(q);
+      for (int k = 0; k < q; ++k) {
+        Pi_candidate(k) = Rcpp::rnorm(1, 0.0, 1.0)(0) * sd + mu(k);
+      }
       rowvec Pi_old = running_P.row(i);
 
       double log_u = log(Rcpp::runif(1)(0));
@@ -490,7 +496,13 @@ arma::mat sample_P_metropolis_trick_soft_cpp_fast(arma::mat &P, arma::mat &Z,
         mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
       }
 
-      rowvec Pi_candidate = mu + randn<rowvec>(q) * sd;
+      // Draw along R's RNG stream exactly as rmvnorm does in the Sigma-based
+      // trick samplers (one Rcpp::rnorm per coordinate), so that the two share
+      // the same RNG consumption and the same `.Random.seed` evolution.
+      rowvec Pi_candidate(q);
+      for (int k = 0; k < q; ++k) {
+        Pi_candidate(k) = Rcpp::rnorm(1, 0.0, 1.0)(0) * sd + mu(k);
+      }
       rowvec Pi_old = running_P.row(i);
 
       rowvec log_pi_cand = ilrInv_cpp(Pi_candidate, basis, true);
