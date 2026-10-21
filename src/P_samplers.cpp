@@ -5,6 +5,14 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 using namespace arma;
+
+// Uniform-random permutation drawn from R's RNG (not Armadillo's). Mirrors
+// arma::randperm(n): draw `n` uniforms and argsort them, so the result and the
+// RNG consumption match `order(runif(n))` in R.
+inline arma::uvec random_perm_r(int n) {
+  arma::vec u = Rcpp::runif(n);
+  return arma::sort_index(u);
+}
 //' A Metropolis-Hastings sampler for P with a classical random walk (C++)
 //'
 //' Proposes each row \eqn{P_i} with an isotropic Gaussian random walk of
@@ -366,7 +374,7 @@ arma::mat sample_P_metropolis_trick_cpp_fast(arma::mat &P, arma::mat &Z,
 
   uvec row_order;
   if (minibatch) {
-    row_order = randperm(n);
+    row_order = random_perm_r(n);
   } else {
     row_order = regspace<uvec>(0, n - 1);
   }
@@ -473,7 +481,7 @@ arma::mat sample_P_metropolis_trick_soft_cpp_fast(arma::mat &P, arma::mat &Z,
 
   uvec row_order;
   if (minibatch) {
-    row_order = randperm(n);
+    row_order = random_perm_r(n);
   } else {
     row_order = regspace<uvec>(0, n - 1);
   }
