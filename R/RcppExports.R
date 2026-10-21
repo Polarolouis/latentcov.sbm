@@ -113,6 +113,62 @@ sample_P_metropolis_trick_cpp_block <- function(P, Z, Sigma, sigma2, minibatch =
     .Call(`_latentcov_sbm_sample_P_metropolis_trick_cpp_block`, P, Z, Sigma, sigma2, minibatch, niter_metropolis, rho, block_size)
 }
 
+#' A fast Metropolis sampler for P with the clever proposition (C++)
+#'
+#' Same proposal as [sample_P_metropolis_trick_cpp()] but computed from the
+#' precision (inverse covariance) matrix `Theta` instead of `Sigma`. For each
+#' row \eqn{i} the full conditional is \eqn{N(\mu_i, \Sigma_i)} with
+#' \deqn{\mu_i = -\frac{1}{\Theta_{ii}} \Theta_{i,-i} P_{-i}, \qquad
+#' \Sigma_i = \frac{\sigma^2}{\Theta_{ii}} I,}
+#' so the conditional mean is obtained with a single matrix-vector product
+#' (\eqn{O(nK)}) instead of a fresh \eqn{O(n^3)} solve of `Sigma[-i,-i]` per
+#' row. As in the ``trick'' samplers, drawing the proposal from this full
+#' conditional makes the Gaussian terms cancel in the acceptance ratio,
+#' leaving only the multinomial prior ratio.
+#'
+#' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent positions
+#' @param Z a matrix of size \eqn{n_1\times K} with a single 1 per line
+#'   indicating the membership of row node \eqn{i}
+#' @param Theta the precision matrix, i.e. \eqn{\Sigma^{-1}}
+#' @param sigma2 a variance parameter indicating the variance between the
+#'   K-1 columns of P
+#' @param minibatch a boolean indicating wether to update the rows in the
+#'   lexical order or to sample at each iteration. Default to TRUE
+#' @param niter_metropolis an integer specifying the number of metropolis
+#'   iterations to perform. Defaults to 50.
+#' @return an updated matrix of latent positions, of the same size as
+#'   \code{P}
+sample_P_metropolis_trick_cpp_fast_impl <- function(P, Z, Theta, sigma2, minibatch = TRUE, niter_metropolis = 50L) {
+    .Call(`_latentcov_sbm_sample_P_metropolis_trick_cpp_fast`, P, Z, Theta, sigma2, minibatch, niter_metropolis)
+}
+
+#' A fast Metropolis sampler for P under soft memberships (C++)
+#'
+#' Proposes every row of `P` from its full conditional given the precision
+#' matrix `Theta` (see [sample_P_metropolis_trick_cpp_fast()]) and accepts
+#' with the *mixed-membership* ratio
+#' \deqn{\sum_k Z^\text{soft}_{i,k}\,
+#' \left[\log p_k(\Pi_i^\text{cand}) - \log p_k(\Pi_i)\right],}
+#' where \eqn{p_k} are the probabilities obtained through the inverse pivot
+#' coordinates. This is the fast, precision-based analogue of
+#' [sample_P_metropolis_trick_soft()].
+#'
+#' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent positions
+#' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
+#'   probabilities (rows sum to 1)
+#' @param Theta the precision matrix, i.e. \eqn{\Sigma^{-1}}
+#' @param sigma2 a variance parameter indicating the variance between the
+#'   K-1 columns of P
+#' @param minibatch a boolean indicating wether to update the rows in the
+#'   lexical order or to sample at each iteration. Default to TRUE
+#' @param niter_metropolis an integer specifying the number of metropolis
+#'   iterations to perform. Defaults to 50.
+#' @return an updated matrix of latent positions, of the same size as
+#'   \code{P}
+sample_P_metropolis_trick_soft_cpp_fast_impl <- function(P, Z, Theta, sigma2, minibatch = TRUE, niter_metropolis = 50L) {
+    .Call(`_latentcov_sbm_sample_P_metropolis_trick_soft_cpp_fast`, P, Z, Theta, sigma2, minibatch, niter_metropolis)
+}
+
 #' Sample a Matrix Normal with parameters M, U and V
 #'
 #' @param M a matrix of size n,p the mean of the matrix normal

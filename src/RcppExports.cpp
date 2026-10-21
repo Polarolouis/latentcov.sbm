@@ -105,6 +105,38 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sample_P_metropolis_trick_cpp_fast
+arma::mat sample_P_metropolis_trick_cpp_fast(arma::mat& P, arma::mat& Z, arma::mat& Theta, double sigma2, bool minibatch, int niter_metropolis);
+RcppExport SEXP _latentcov_sbm_sample_P_metropolis_trick_cpp_fast(SEXP PSEXP, SEXP ZSEXP, SEXP ThetaSEXP, SEXP sigma2SEXP, SEXP minibatchSEXP, SEXP niter_metropolisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Theta(ThetaSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< bool >::type minibatch(minibatchSEXP);
+    Rcpp::traits::input_parameter< int >::type niter_metropolis(niter_metropolisSEXP);
+    rcpp_result_gen = Rcpp::wrap(sample_P_metropolis_trick_cpp_fast(P, Z, Theta, sigma2, minibatch, niter_metropolis));
+    return rcpp_result_gen;
+END_RCPP
+}
+// sample_P_metropolis_trick_soft_cpp_fast
+arma::mat sample_P_metropolis_trick_soft_cpp_fast(arma::mat& P, arma::mat& Z, arma::mat& Theta, double sigma2, bool minibatch, int niter_metropolis);
+RcppExport SEXP _latentcov_sbm_sample_P_metropolis_trick_soft_cpp_fast(SEXP PSEXP, SEXP ZSEXP, SEXP ThetaSEXP, SEXP sigma2SEXP, SEXP minibatchSEXP, SEXP niter_metropolisSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type P(PSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type Theta(ThetaSEXP);
+    Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< bool >::type minibatch(minibatchSEXP);
+    Rcpp::traits::input_parameter< int >::type niter_metropolis(niter_metropolisSEXP);
+    rcpp_result_gen = Rcpp::wrap(sample_P_metropolis_trick_soft_cpp_fast(P, Z, Theta, sigma2, minibatch, niter_metropolis));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rmatrixnormal_cpp
 arma::mat rmatrixnormal_cpp(const arma::mat& M, const arma::mat& U, const arma::mat& V);
 RcppExport SEXP _latentcov_sbm_rmatrixnormal_cpp(SEXP MSEXP, SEXP USEXP, SEXP VSEXP) {
@@ -176,6 +208,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_latentcov_sbm_sample_P_metropolis_classical_cpp", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_classical_cpp, 7},
     {"_latentcov_sbm_sample_P_metropolis_trick_cpp", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_trick_cpp, 7},
     {"_latentcov_sbm_sample_P_metropolis_trick_cpp_block", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_trick_cpp_block, 8},
+    {"_latentcov_sbm_sample_P_metropolis_trick_cpp_fast", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_trick_cpp_fast, 6},
+    {"_latentcov_sbm_sample_P_metropolis_trick_soft_cpp_fast", (DL_FUNC) &_latentcov_sbm_sample_P_metropolis_trick_soft_cpp_fast, 6},
     {"_latentcov_sbm_rmatrixnormal_cpp", (DL_FUNC) &_latentcov_sbm_rmatrixnormal_cpp, 3},
     {"_latentcov_sbm_dmatrixnormal_cpp", (DL_FUNC) &_latentcov_sbm_dmatrixnormal_cpp, 5},
     {"_latentcov_sbm_compute_Uinv", (DL_FUNC) &_latentcov_sbm_compute_Uinv, 1},
