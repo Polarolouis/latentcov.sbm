@@ -4,7 +4,7 @@
 \alias{param_alpha_given_Y_Z_W_poisson}
 \title{Compute posterior parameters for the Gamma connectivity coefficients}
 \usage{
-param_alpha_given_Y_Z_W_poisson(a0, b0, Y, Z, W, mask)
+param_alpha_given_Y_Z_W_poisson(a0, b0, Y, Z, W, mask, stats_cols = NULL)
 }
 \arguments{
 \item{a0}{prior shape parameter of the Gamma}
@@ -20,6 +20,10 @@ indicating the membership of row node \eqn{i}}
 indicating the membership of column node \eqn{j}}
 
 \item{mask}{a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.}
+
+\item{stats_cols}{optional; a list returned by \code{\link[=sufficient_stats_cols]{sufficient_stats_cols()}} to
+reuse already-computed aggregates instead of recomputing them from \code{Y},
+\code{mask} and \code{Z}.}
 }
 \value{
 a list with \code{shape} and \code{rate} matrices (\eqn{K \times R}) of the posterior Gamma parameters

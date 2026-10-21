@@ -158,19 +158,18 @@ test_that("tol clamps extreme membership probabilities", {
 
 # --- sampling memberships from normalized probs --------------------------------
 
-test_that("sample_Z/W return labels within range and respect degenerate probs", {
+test_that("sample_categorical_rows returns labels within range and respects degenerate probs", {
   set.seed(506L)
   ones <- .one_hot(c(2, 1, 2, 3, 1, 3), K_fx)
-  expect_equal(sample_Z_given_alpha_pi_Y_W(ones), c(2, 1, 2, 3, 1, 3))
-  expect_equal(sample_Z_given_alpha_P_Y_W(ones), c(2, 1, 2, 3, 1, 3))
+  expect_equal(sample_categorical_rows(ones), c(2, 1, 2, 3, 1, 3))
   Wo <- .one_hot(c(1, 2, 1), R_fx)
-  expect_equal(sample_W_given_alpha_rho_Y_Z(Wo), c(1, 2, 1))
+  expect_equal(sample_categorical_rows(Wo), c(1, 2, 1))
 })
 
-test_that("sample_Z draws from a soft distribution with the right frequency", {
+test_that("sample_categorical_rows draws from a soft distribution with the right frequency", {
   set.seed(507L)
   probs <- matrix(c(0.8, 0.2, 0.2, 0.8), 2, 2, byrow = TRUE)
-  draws <- replicate(2000, sample_Z_given_alpha_pi_Y_W(probs))
+  draws <- replicate(2000, sample_categorical_rows(probs))
   expect_equal(mean(draws[1, ]), 1.2, tolerance = 0.05)
   expect_true(all(draws %in% 1:2))
 })

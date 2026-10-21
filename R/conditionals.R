@@ -144,6 +144,21 @@ sample_pi_given_Z <- function(etas_post) {
   as.vector(MCMCpack::rdirichlet(n = 1, alpha = etas_post))
 }
 
+#' Sample block memberships
+#'
+#' Draws the block label of each node independently from its categorical
+#' distribution. Shared by the row- (`Z`) and column- (`W`) membership
+#' updates, which are otherwise identical.
+#'
+#' @param probs a matrix (\eqn{n \times Q}) of per-node membership probabilities
+#'
+#' @return an integer vector of length \eqn{n} with one sampled group label per node
+sample_categorical_rows <- function(probs) {
+  sapply(seq_len(nrow(probs)), function(i) {
+    sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
+  })
+}
+
 # Z | alpha, pi, Y, W
 # Multinomial prob to normalize
 
@@ -161,32 +176,24 @@ sample_pi_given_Z <- function(etas_post) {
 #' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
 #' @param tol Numeric; a small number used to clamp probabilities to
 #' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
+#' @param stats optional; a list returned by [sufficient_stats_rows()] to reuse
+#' already-computed aggregates instead of recomputing them from `Y`, `mask`
+#' and `W`.
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
-param_multinom_probs_Z_poisson <- function(Y, alpha, W, pi, mask, tol = TOL) {
-  Y_obs <- mask_observed(Y, mask)
-  R_W <- Y_obs %*% W
-  N_W <- mask %*% W # diag(colSums(W))
-  unormalized_log_probs <- matrix(1, nrow = nrow(Y)) %*%
-    log(pi) +
-    R_W %*% log(t(alpha)) -
-    N_W %*% t(alpha)
-
-  return(row_normalize_matrix(unormalized_log_probs, tol = tol))
-}
-
-#' Sample row-block memberships Z
-#'
-#' Draws the block label of each row node independently from its
-#' categorical distribution.
-#'
-#' @param probs a matrix (\eqn{n_1 \times K}) of per-row membership probabilities
-#'
-#' @return an integer vector of length \eqn{n_1} with one sampled group label per row node
-sample_Z_given_alpha_pi_Y_W <- function(probs) {
-  sapply(seq_len(nrow(probs)), function(i) {
-    sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
-  })
+param_multinom_probs_Z_poisson <- function(
+  Y,
+  alpha,
+  W,
+  pi,
+  mask,
+  tol = TOL,
+  stats = NULL
+) {
+  if (is.null(stats)) {
+    stats <- sufficient_stats_rows(Y, mask, W)
+  }
+  multinom_probs_Z(stats, alpha, pi, tol = tol)
 }
 
 ## END OF CLASSICAL LBM
@@ -237,6 +244,9 @@ sample_rho_given_W <- function(gammas_post) {
 #' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
 #' @param tol Numeric; a small number used to clamp probabilities to
 #' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
+#' @param stats optional; a list returned by [sufficient_stats_rows()] to reuse
+#' already-computed aggregates instead of recomputing them from `Y`, `mask`
+#' and `W`.
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
 param_multinom_probs_Z_cov_poisson <- function(
@@ -245,30 +255,13 @@ param_multinom_probs_Z_cov_poisson <- function(
   W,
   P,
   mask,
-  tol = TOL
+  tol = TOL,
+  stats = NULL
 ) {
-  Y_obs <- mask_observed(Y, mask)
-  R_W <- Y_obs %*% W
-  N_W <- mask %*% W # diag(colSums(W))
-  unormalized_log_probs <- log(ilrInv(P)) +
-    R_W %*% log(t(alpha)) -
-    N_W %*% t(alpha)
-
-  return(row_normalize_matrix(unormalized_log_probs, tol = tol))
-}
-
-#' Sample row-block memberships Z
-#'
-#' Draws the block label of each row node independently from its
-#' categorical distribution.
-#'
-#' @param probs a matrix (\eqn{n_1 \times K}) of per-row membership probabilities
-#'
-#' @return an integer vector of length \eqn{n_1} with one sampled group label per row node
-sample_Z_given_alpha_P_Y_W <- function(probs) {
-  sapply(seq_len(nrow(probs)), function(i) {
-    sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
-  })
+  if (is.null(stats)) {
+    stats <- sufficient_stats_rows(Y, mask, W)
+  }
+  multinom_probs_Z(stats, alpha, ilrInv(P), tol = tol)
 }
 
 # W | alpha, rho, Y, Z
@@ -287,34 +280,25 @@ sample_Z_given_alpha_P_Y_W <- function(probs) {
 #' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
 #' @param tol Numeric; a small number used to clamp probabilities to
 #' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
+#' @param stats optional; a list returned by [sufficient_stats_cols()] to reuse
+#' already-computed aggregates instead of recomputing them from `Y`, `mask`
+#' and `Z`.
 #'
 #' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
-param_multinom_probs_W_poisson <- function(Y, alpha, Z, rho, mask, tol = TOL) {
-  Y_obs <- mask_observed(Y, mask)
-  R_Z <- t(Y_obs) %*% Z
-  N_Z <- t(mask) %*% Z # diag(colSums(Z))
-  unormalized_log_probs <- matrix(1, nrow = ncol(Y)) %*%
-    log(rho) +
-    R_Z %*% log(alpha) -
-    N_Z %*% alpha
-
-  return(row_normalize_matrix(unormalized_log_probs, tol = tol))
+param_multinom_probs_W_poisson <- function(
+  Y,
+  alpha,
+  Z,
+  rho,
+  mask,
+  tol = TOL,
+  stats = NULL
+) {
+  if (is.null(stats)) {
+    stats <- sufficient_stats_cols(Y, mask, Z)
+  }
+  multinom_probs_W(stats, alpha, rho, tol = tol)
 }
-
-#' Sample column-block memberships W
-#'
-#' Draws the block label of each column node independently from its
-#' categorical distribution.
-#'
-#' @param probs a matrix (\eqn{n_2 \times R}) of per-column membership probabilities
-#'
-#' @return an integer vector of length \eqn{n_2} with one sampled group label per column node
-sample_W_given_alpha_rho_Y_Z <- function(probs) {
-  sapply(seq_len(nrow(probs)), function(i) {
-    sample.int(n = ncol(probs), size = 1, replace = TRUE, prob = probs[i, ])
-  })
-}
-
 
 # alpha | Y,Z,W
 
@@ -331,15 +315,24 @@ sample_W_given_alpha_rho_Y_Z <- function(probs) {
 #' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
 #' indicating the membership of column node \eqn{j}
 #' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
+#' @param stats_cols optional; a list returned by [sufficient_stats_cols()] to
+#' reuse already-computed aggregates instead of recomputing them from `Y`,
+#' `mask` and `Z`.
 #'
 #' @return a list with `shape` and `rate` matrices (\eqn{K \times R}) of the posterior Gamma parameters
-param_alpha_given_Y_Z_W_poisson <- function(a0, b0, Y, Z, W, mask) {
-  Y_obs <- mask_observed(Y, mask)
-
-  return(list(
-    shape = a0 + t(Z) %*% Y_obs %*% W,
-    rate = b0 + t(Z) %*% mask %*% W
-  ))
+param_alpha_given_Y_Z_W_poisson <- function(
+  a0,
+  b0,
+  Y,
+  Z,
+  W,
+  mask,
+  stats_cols = NULL
+) {
+  if (is.null(stats_cols)) {
+    stats_cols <- sufficient_stats_cols(Y, mask, Z)
+  }
+  alpha_params_from_stats_cols(a0, b0, W, stats_cols)
 }
 
 #' Sample the connectivity matrix alpha

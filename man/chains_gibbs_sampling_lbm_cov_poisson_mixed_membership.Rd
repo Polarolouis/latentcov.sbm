@@ -14,9 +14,8 @@ chains_gibbs_sampling_lbm_cov_poisson_mixed_membership(
 \arguments{
 \item{nchains}{the number of chains to run concurrently}
 
-\item{auto_save_path}{the base name from which each chain will be
-named \code{auto_save_path} + 1, 2, ... ".Rds" will be appended at
-the end. Defaults to}
+\item{auto_save_path}{the base name from which each chain will be named
+\code{auto_save_path} + \verb{_i.Rds}}
 
 \item{verbose}{a boolean indicating if the function should print messages.
 Defaults to the value of \code{option("latentcov.sbm.verbose")}.}
