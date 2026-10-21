@@ -289,7 +289,7 @@ gibbs_sampling_lbm_poisson <- function(
 #' `verbose=FALSE`. Defaults to '' (empty string)
 #' @param known_P NULL (default) or a matrix (\eqn{n_1\times K-1}) indicating the known latent correlated position used to compute probabilities of blocks
 #' @param P_sampler a function indicating the sampler to use for the P
-#' variable. Default to sample_P_metropolis_trick
+#' variable. Default to sample_P_metropolis_trick_cpp_fast
 #'
 #' @inheritParams sample_P_metropolis_classical
 #' @inheritParams sample_P_metropolis_trick
@@ -322,7 +322,7 @@ gibbs_sampling_lbm_cov_poisson <- function(
   known_W = NULL,
   known_Z = NULL,
   known_rho = NULL,
-  P_sampler = sample_P_metropolis_trick_cpp,
+  P_sampler = sample_P_metropolis_trick_cpp_fast,
   minibatch = TRUE,
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
@@ -595,7 +595,7 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   known_P = NULL,
   known_W = NULL,
   known_rho = NULL,
-  P_sampler = sample_P_metropolis_trick_soft,
+  P_sampler = sample_P_metropolis_trick_soft_cpp_fast,
   minibatch = TRUE,
   tol = TOL,
   verbose = FALSE,
