@@ -150,9 +150,16 @@ sample_P_metropolis_trick <- function(
 #' categorical log-likelihood over all blocks by the soft memberships of row
 #' `i`.
 #'
+#' This pure-R implementation follows the same RNG stream as
+#' [sample_P_metropolis_trick_soft_cpp_fast()] (permutation via
+#' `order(runif(n))` and per-coordinate normal plus one uniform per Metropolis
+#' step), so that with an identical seed the two generate the same sequence.
+#'
 #' @inheritParams sample_P_metropolis_trick
 #' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
 #'   probabilities (rows sum to 1) in lieu of a hard indicator matrix
+#' @param Theta Optional. The precision matrix \eqn{\Sigma^{-1}}. If `NULL`
+#'   (default) it is computed once as `solve(Sigma)`.
 #'
 #' @return an updated matrix of latent positions, of the same size as `P`
 #' @export
@@ -163,44 +170,51 @@ sample_P_metropolis_trick_soft <- function(
   sigma2,
   minibatch = TRUE,
   niter_metropolis = 50L,
+  Theta = NULL,
   ...
 ) {
+  if (is.null(Theta)) {
+    Theta <- solve(Sigma)
+  }
   n <- nrow(P)
-  out_P <- array(
-    P,
-    dim = dim(P),
-    dimnames = list(
-      "Individual" = paste0("P", seq_len(nrow(P))),
-      "Coordinates" = seq_len(ncol(P))
-    )
-  )
-  row_order <- if (minibatch) sample(x = n, size = n) else seq(1, n)
-  for (ind_iter in seq(n)) {
-    i <- row_order[ind_iter]
-    for (iter_metro in seq(niter_metropolis)) {
-      Pi_candidate <- sample_Pi_given(
-        P = P,
-        Sigma = Sigma,
-        sigma2 = sigma2,
-        i = i
-      )
+  m <- ncol(P)
+  running_P <- P
+
+  # Permutation matching arma::randperm(n): `n` uniforms sorted by value,
+  # so that the pure-R sampler and the C++ fast sampler consume R's RNG in
+  # the same way and therefore generate the same sequence for the same seed.
+  row_order <- if (minibatch) order(runif(n)) else seq_len(n)
+
+  for (i in row_order) {
+    sd <- NULL
+    for (iter_metro in seq_len(niter_metropolis)) {
+      # Full conditional (see cond_Pi_fast), recomputed because the mean
+      # depends on the current P.
+      ci <- cond_Pi_fast(running_P, Theta, sigma2, i)
+      if (is.null(sd)) sd <- sqrt(ci$cov[1, 1])
+      Pi_candidate <- ci$mean + rnorm(m) * sd
+      Pi_old <- running_P[i, ]
 
       # Mixed-membership log-likelihood ratio:
       #   sum_k Z_soft[i,k] * (log ilrInv(P_i^cand)[k] - log ilrInv(P_i)[k])
       log_accept <- sum(
         Z[i, ] *
           (log(ilrInv(matrix(Pi_candidate, nrow = 1))) -
-            log(ilrInv(matrix(P[i, ], nrow = 1))))
+            log(ilrInv(matrix(Pi_old, nrow = 1))))
       )
-      log_u <- log(runif(n = 1))
+      log_u <- log(runif(1))
 
       if (log_u < log_accept) {
-        out_P[i, ] <- Pi_candidate
-        P[i, ] <- Pi_candidate
+        running_P[i, ] <- Pi_candidate
       }
     }
   }
-  return(out_P)
+
+  dimnames(running_P) <- list(
+    "Individual" = paste0("P", seq_len(n)),
+    "Coordinates" = seq_len(m)
+  )
+  return(running_P)
 }
 
 #' Fast Metropolis sampler for P with the clever proposition (precision-based)
