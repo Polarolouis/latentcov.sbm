@@ -326,3 +326,202 @@ arma::mat sample_P_metropolis_trick_cpp_block(arma::mat &P, arma::mat &Z,
 
   return running_P;
 };
+
+//' A fast Metropolis sampler for P with the clever proposition (C++)
+//'
+//' Same proposal as [sample_P_metropolis_trick_cpp()] but computed from the
+//' precision (inverse covariance) matrix `Theta` instead of `Sigma`. For each
+//' row \eqn{i} the full conditional is \eqn{N(\mu_i, \Sigma_i)} with
+//' \deqn{\mu_i = -\frac{1}{\Theta_{ii}} \Theta_{i,-i} P_{-i}, \qquad
+//' \Sigma_i = \frac{\sigma^2}{\Theta_{ii}} I,}
+//' so the conditional mean is obtained with a single matrix-vector product
+//' (\eqn{O(nK)}) instead of a fresh \eqn{O(n^3)} solve of `Sigma[-i,-i]` per
+//' row. As in the ``trick'' samplers, drawing the proposal from this full
+//' conditional makes the Gaussian terms cancel in the acceptance ratio,
+//' leaving only the multinomial prior ratio.
+//'
+//' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent positions
+//' @param Z a matrix of size \eqn{n_1\times K} with a single 1 per line
+//'   indicating the membership of row node \eqn{i}
+//' @param Theta the precision matrix, i.e. \eqn{\Sigma^{-1}}
+//' @param sigma2 a variance parameter indicating the variance between the
+//'   K-1 columns of P
+//' @param minibatch a boolean indicating wether to update the rows in the
+//'   lexical order or to sample at each iteration. Default to TRUE
+//' @param niter_metropolis an integer specifying the number of metropolis
+//'   iterations to perform. Defaults to 50.
+//' @return an updated matrix of latent positions, of the same size as
+//'   \code{P}
+// [[Rcpp::export(name = "sample_P_metropolis_trick_cpp_fast_impl")]]
+arma::mat sample_P_metropolis_trick_cpp_fast(arma::mat &P, arma::mat &Z,
+                                             arma::mat &Theta, double sigma2,
+                                             bool minibatch = true,
+                                             int niter_metropolis = 50) {
+  Rcpp::RNGScope scope;
+  mat running_P = P;
+  int n = running_P.n_rows;
+  int q = running_P.n_cols;
+  int K = q + 1;
+  mat basis = default_Psi_function_cpp(K);
+
+  uvec row_order;
+  if (minibatch) {
+    row_order = randperm(n);
+  } else {
+    row_order = regspace<uvec>(0, n - 1);
+  }
+
+  int accepted_count = 0;
+  for (uvec::iterator ind_id = row_order.begin(); ind_id != row_order.end();
+       ++ind_id) {
+    int i = *ind_id;
+    double Theta_ii = Theta(i, i);
+    if (Theta_ii <= 0) {
+      Rcpp::stop("Theta must be positive definite: diagonal entry %d <= 0.",
+                 i + 1);
+    }
+    double sd = std::sqrt(sigma2 / Theta_ii);
+    // Precision-matrix row products (Theta only heterogeneous through row i).
+    arma::subview_row<double> Theta_i = Theta.row(i);
+    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
+      // Conditional mean: mu = -(1/Theta_ii) * Theta[i,-i] %*% P[-i,]
+      rowvec mu(q, arma::fill::zeros);
+      for (int j = 0; j < n; ++j) {
+        if (j == i) continue;
+        mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
+      }
+
+      rowvec Pi_candidate = mu + randn<rowvec>(q) * sd;
+      rowvec Pi_old = running_P.row(i);
+
+      double log_u = log(Rcpp::runif(1)(0));
+
+      uvec Zi_vec = find(Z.row(i) == 1, 1, "first");
+      uword Zi = Zi_vec(0);
+
+      double log_accept = ilrInv_cpp(Pi_candidate, basis, true)(Zi) -
+                          ilrInv_cpp(Pi_old, basis, true)(Zi);
+
+      if (DEBUG_SAMPLE) {
+        Rcpp::Rcout << "(multinom) accept_prob = " << exp(log_accept)
+                    << " | u = " << exp(log_u) << std::endl;
+      }
+
+      if (log_u < log_accept) {
+        if (DEBUG_SAMPLE) {
+          Rcpp::Rcout << "Accepted !" << std::endl << "Old Pi = ";
+          Pi_old.print(Rcpp::Rcout);
+          Rcpp::Rcout << "New Pi = ";
+          Pi_candidate.print(Rcpp::Rcout);
+        }
+        running_P.row(i) = Pi_candidate;
+        accepted_count++;
+      }
+    }
+  }
+
+  if (DEBUG_SAMPLE) {
+    Rcpp::Rcout << "Mean accepted rate = "
+                << (float)accepted_count / (float)(niter_metropolis * n)
+                << std::endl;
+  }
+
+  return running_P;
+};
+
+//' A fast Metropolis sampler for P under soft memberships (C++)
+//'
+//' Proposes every row of `P` from its full conditional given the precision
+//' matrix `Theta` (see [sample_P_metropolis_trick_cpp_fast()]) and accepts
+//' with the *mixed-membership* ratio
+//' \deqn{\sum_k Z^\text{soft}_{i,k}\,
+//' \left[\log p_k(\Pi_i^\text{cand}) - \log p_k(\Pi_i)\right],}
+//' where \eqn{p_k} are the probabilities obtained through the inverse pivot
+//' coordinates. This is the fast, precision-based analogue of
+//' [sample_P_metropolis_trick_soft()].
+//'
+//' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent positions
+//' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
+//'   probabilities (rows sum to 1)
+//' @param Theta the precision matrix, i.e. \eqn{\Sigma^{-1}}
+//' @param sigma2 a variance parameter indicating the variance between the
+//'   K-1 columns of P
+//' @param minibatch a boolean indicating wether to update the rows in the
+//'   lexical order or to sample at each iteration. Default to TRUE
+//' @param niter_metropolis an integer specifying the number of metropolis
+//'   iterations to perform. Defaults to 50.
+//' @return an updated matrix of latent positions, of the same size as
+//'   \code{P}
+// [[Rcpp::export(name = "sample_P_metropolis_trick_soft_cpp_fast_impl")]]
+arma::mat sample_P_metropolis_trick_soft_cpp_fast(arma::mat &P, arma::mat &Z,
+                                                  arma::mat &Theta,
+                                                  double sigma2,
+                                                  bool minibatch = true,
+                                                  int niter_metropolis = 50) {
+  Rcpp::RNGScope scope;
+  mat running_P = P;
+  int n = running_P.n_rows;
+  int q = running_P.n_cols;
+  int K = q + 1;
+  mat basis = default_Psi_function_cpp(K);
+
+  uvec row_order;
+  if (minibatch) {
+    row_order = randperm(n);
+  } else {
+    row_order = regspace<uvec>(0, n - 1);
+  }
+
+  int accepted_count = 0;
+  for (uvec::iterator ind_id = row_order.begin(); ind_id != row_order.end();
+       ++ind_id) {
+    int i = *ind_id;
+    double Theta_ii = Theta(i, i);
+    if (Theta_ii <= 0) {
+      Rcpp::stop("Theta must be positive definite: diagonal entry %d <= 0.",
+                 i + 1);
+    }
+    double sd = std::sqrt(sigma2 / Theta_ii);
+    arma::subview_row<double> Theta_i = Theta.row(i);
+    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
+      rowvec mu(q, arma::fill::zeros);
+      for (int j = 0; j < n; ++j) {
+        if (j == i) continue;
+        mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
+      }
+
+      rowvec Pi_candidate = mu + randn<rowvec>(q) * sd;
+      rowvec Pi_old = running_P.row(i);
+
+      rowvec log_pi_cand = ilrInv_cpp(Pi_candidate, basis, true);
+      rowvec log_pi_old = ilrInv_cpp(Pi_old, basis, true);
+      double log_accept = dot(Z.row(i), log_pi_cand - log_pi_old);
+
+      double log_u = log(Rcpp::runif(1)(0));
+
+      if (DEBUG_SAMPLE) {
+        Rcpp::Rcout << "(soft multinom) accept_prob = " << exp(log_accept)
+                    << " | u = " << exp(log_u) << std::endl;
+      }
+
+      if (log_u < log_accept) {
+        if (DEBUG_SAMPLE) {
+          Rcpp::Rcout << "Accepted !" << std::endl << "Old Pi = ";
+          Pi_old.print(Rcpp::Rcout);
+          Rcpp::Rcout << "New Pi = ";
+          Pi_candidate.print(Rcpp::Rcout);
+        }
+        running_P.row(i) = Pi_candidate;
+        accepted_count++;
+      }
+    }
+  }
+
+  if (DEBUG_SAMPLE) {
+    Rcpp::Rcout << "Mean accepted rate = "
+                << (float)accepted_count / (float)(niter_metropolis * n)
+                << std::endl;
+  }
+
+  return running_P;
+};
