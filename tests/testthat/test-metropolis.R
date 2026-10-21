@@ -268,3 +268,60 @@ test_that("fast samplers use the same near-fixed-point behaviour", {
   )
   expect_equal(unname(out_fast), unname(P_sim), tolerance = 0.25)
 })
+
+test_that("the fast samplers share the RNG stream of the Sigma-based trick", {
+  # The hard fast sampler must consume exactly the same RNG draws as the
+  # Sigma-based `sample_P_metropolis_trick_cpp` (one Rcpp::rnorm per coordinate
+  # plus one runif per Metropolis step). With an identical starting seed the
+  # two therefore end on the same `.Random.seed` and, because the full
+  # conditionals coincide up to floating-point round-off, produce
+  # nearly-identical positions.
+  Sigma <- Sigma_fx
+  run_both <- function(seed) {
+    set.seed(seed)
+    trick <- latentcov.sbm:::sample_P_metropolis_trick_cpp(
+      .P, Z_fx, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = .niter
+    )
+    seed_trick <- .Random.seed
+    set.seed(seed)
+    fast <- sample_P_metropolis_trick_cpp_fast(
+      .P, Z_fx, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = .niter
+    )
+    list(
+      seed_identical = identical(seed_trick, .Random.seed),
+      maxdiff = max(abs(unname(trick) - unname(fast)))
+    )
+  }
+  res <- run_both(123L)
+  expect_true(res$seed_identical)
+  expect_lt(res$maxdiff, 1e-8)
+})
+
+test_that("both fast samplers draw per-coordinate normals plus one uniform", {
+  # RNG-consumption invariant: over `n * niter` Metropolis steps the fast
+  # samplers (hard and soft) must advance R's RNG exactly as `m` standard
+  # normals followed by one uniform per step, i.e. in lockstep with the
+  # Sigma-based trick samplers.
+  Sigma <- Sigma_fx
+  m <- ncol(.P)
+  niter <- 5L
+  n_steps <- nrow(.P) * niter
+  expected <- function(seed) {
+    set.seed(seed)
+    for (i in seq_len(n_steps)) {
+      invisible(rnorm(m))
+      invisible(runif(1))
+    }
+    .Random.seed
+  }
+  set.seed(321L)
+  invisible(sample_P_metropolis_trick_cpp_fast(
+    .P, Z_fx, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = niter
+  ))
+  expect_identical(.Random.seed, expected(321L))
+  set.seed(322L)
+  invisible(sample_P_metropolis_trick_soft_cpp_fast(
+    .P, Z_fx_soft, Sigma, .sigma2, minibatch = FALSE, niter_metropolis = niter
+  ))
+  expect_identical(.Random.seed, expected(322L))
+})
