@@ -36,11 +36,15 @@ colnames(P_fx) <- paste0("coord", seq_len(K_fx - 1L))
 # One-hot row memberships (n1 x K).
 Z_fx <- matrix(0, n1_fx, K_fx)
 Z_fx[cbind(seq_len(n1_fx), c(1L, 2L, 3L, 1L, 2L, 3L))] <- 1
+Z_fx_soft <- matrix(0.05, n1_fx, K_fx)
+Z_fx_soft[cbind(seq_len(n1_fx), c(1L, 2L, 3L, 1L, 2L, 3L))] <- 0.9
 
 # One-hot column memberships (n2 x R).
 W_fx <- matrix(0, n2_fx, R_fx)
 W_fx[cbind(seq_len(n2_fx), c(1L, 2L, 1L, 2L, 1L))] <- 1
 
+W_fx_soft <- matrix(0.2, n2_fx, R_fx)
+W_fx_soft[cbind(seq_len(n2_fx), c(1L, 2L, 1L, 2L, 1L))] <- 0.8
 # Connectivity matrix.
 alpha_fx <- matrix(c(3, 1, 2, 1, 2, 4), nrow = K_fx, ncol = R_fx, byrow = TRUE)
 

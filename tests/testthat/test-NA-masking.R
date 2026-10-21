@@ -40,7 +40,7 @@ test_that("sample functions can draw from NA-free probabilities derived from mas
   probs <- param_multinom_probs_Z_poisson(Y, alpha, W, pi, mask)
   expect_false(anyNA(probs))
   set.seed(1)
-  Zs <- sample_Z_given_alpha_P_Y_W(probs)
+  Zs <- sample_categorical_rows(probs)
   expect_length(Zs, nrow(probs))
   expect_true(all(Zs %in% seq_len(2)))
 })
@@ -77,4 +77,44 @@ test_that("gibbs_sampling_lbm_poisson runs on Y with NAs without producing NA al
     variable = "alpha"
   ))
   expect_false(any(is.na(alpha)))
+})
+
+test_that("mixed-membership Gibbs handles NAs when alpha and W are free", {
+  n1 <- 40
+  n2 <- 30
+  K <- 3
+  R <- 4
+  set.seed(1234)
+  rho <- c(0.4, 0.3, 0.2, 0.1)
+  W <- sample.int(R, n2, replace = TRUE, prob = rho)
+  mem <- rep(seq(K), each = floor(n1 / K))
+  mem <- c(mem, rep(K, n1 - length(mem)))
+  Sigma <- matrix(0.05, n1, n1)
+  Sigma[outer(mem, mem, `==`)] <- 0.6
+  diag(Sigma) <- 1
+  P <- simulate_P(K, Sigma, sigma2 = 1)
+  Z <- simulate_Z_from_P(P)
+  alpha_sharp <- matrix(
+    c(120, 100, 80, 40, 90, 70, 45, 20, 30, 20, 10, 6),
+    K,
+    byrow = TRUE
+  )
+  Y_full <- simulate_SBM_alpha_Z_W(alpha_sharp, Z, W)
+  Na_idx <- sample.int(n1 * n2, floor(0.4 * n1 * n2))
+  Y <- Y_full
+  Y[Na_idx] <- NA
+
+  set.seed(2)
+  draws <- gibbs_sampling_lbm_cov_poisson_mixed_membership(
+    Sigma = Sigma,
+    Y = Y,
+    init_Z = ilrInv(P),
+    init_W = W,
+    K = K,
+    R = R,
+    niter = 10
+  )
+  df <- as.data.frame(posterior::as_draws_df(draws))
+  expect_false(any(is.na(df)))
+  expect_true(all(is.finite(as.matrix(df))))
 })
