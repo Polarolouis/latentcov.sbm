@@ -448,15 +448,28 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### P | sigma2, Z
     if (is.null(known_P)) {
-      current_P <- P_sampler(
-        P = current_P,
-        Z = Z,
-        Sigma = Sigma,
-        sigma2 = current_sigma2,
-        minibatch = minibatch,
-        niter_metropolis = niter_metropolis,
-        rho = rho
-      )
+      if ("Theta" %in% names(formals(P_sampler))) {
+        current_P <- P_sampler(
+          P = current_P,
+          Z = Z,
+          Sigma = Sigma,
+          sigma2 = current_sigma2,
+          minibatch = minibatch,
+          niter_metropolis = niter_metropolis,
+          rho = rho,
+          Theta = Theta
+        )
+      } else {
+        current_P <- P_sampler(
+          P = current_P,
+          Z = Z,
+          Sigma = Sigma,
+          sigma2 = current_sigma2,
+          minibatch = minibatch,
+          niter_metropolis = niter_metropolis,
+          rho = rho
+        )
+      }
     } else {
       current_P <- known_P
     }
@@ -710,15 +723,28 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
 
     ### P | sigma2, Z_post_probs (soft membership likelihood)
     if (is.null(known_P)) {
-      current_P <- P_sampler(
-        P = current_P,
-        Z = Z_post_probs,
-        Sigma = Sigma,
-        sigma2 = current_sigma2,
-        minibatch = minibatch,
-        niter_metropolis = niter_metropolis,
-        rho = rho
-      )
+      if ("Theta" %in% names(formals(P_sampler))) {
+        current_P <- P_sampler(
+          P = current_P,
+          Z = Z_post_probs,
+          Sigma = Sigma,
+          sigma2 = current_sigma2,
+          minibatch = minibatch,
+          niter_metropolis = niter_metropolis,
+          rho = rho,
+          Theta = Theta
+        )
+      } else {
+        current_P <- P_sampler(
+          P = current_P,
+          Z = Z_post_probs,
+          Sigma = Sigma,
+          sigma2 = current_sigma2,
+          minibatch = minibatch,
+          niter_metropolis = niter_metropolis,
+          rho = rho
+        )
+      }
     } else {
       current_P <- known_P
     }
