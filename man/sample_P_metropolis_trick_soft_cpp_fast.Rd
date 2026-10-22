@@ -34,6 +34,8 @@ probabilities (rows sum to 1) in lieu of a hard indicator matrix}
 \item{Theta}{Optional. The precision matrix \eqn{\Sigma^{-1}}. If \code{NULL}
 (default) it is computed once as \code{solve(Sigma)}, which is only carried
 once per call and therefore negligible.}
+
+\item{...}{Used to pass various args}
 }
 \value{
 an updated matrix of latent positions, of the same size as \code{P}

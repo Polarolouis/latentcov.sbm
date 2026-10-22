@@ -160,6 +160,7 @@ sample_P_metropolis_trick <- function(
 #'   probabilities (rows sum to 1) in lieu of a hard indicator matrix
 #' @param Theta Optional. The precision matrix \eqn{\Sigma^{-1}}. If `NULL`
 #'   (default) it is computed once as `solve(Sigma)`.
+#' @param ... Used to pass various args
 #'
 #' @return an updated matrix of latent positions, of the same size as `P`
 #' @export
@@ -239,6 +240,7 @@ sample_P_metropolis_trick_soft <- function(
 #' @param Theta Optional. The precision matrix \eqn{\Sigma^{-1}}. If `NULL`
 #'   (default) it is computed once as `solve(Sigma)`, which is only carried
 #'   once per call and therefore negligible.
+#' @param ... Used to pass various args
 #'
 #' @return an updated matrix of latent positions, of the same size as `P`
 #'
@@ -284,6 +286,7 @@ sample_P_metropolis_trick_cpp_fast <- function(
 #' @inheritParams sample_P_metropolis_trick_cpp_fast
 #' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
 #'   probabilities (rows sum to 1) in lieu of a hard indicator matrix
+#' @param ... Used to pass various args
 #'
 #' @return an updated matrix of latent positions, of the same size as `P`
 #'
