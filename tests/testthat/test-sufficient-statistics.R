@@ -13,6 +13,16 @@ test_that("sufficient_stats_rows/cols match manual mask-aware aggregates", {
   expect_equal(stats_cols$N_Z, t(mask_fx) %*% Z_fx)
 })
 
+test_that("sufficient_stats bind sufficient_stats_rows and sufficient_stats_cols in one list", {
+  stats_rows <- sufficient_stats_rows(Y_fx, mask_fx, W_fx)
+  stats_cols <- sufficient_stats_cols(Y_fx, mask_fx, Z_fx)
+
+  expect_equal(
+    sufficient_stats(Y_fx, mask_fx, Z_fx, W_fx),
+    c(stats_cols, stats_rows)
+  )
+})
+
 test_that("Soft memberships are valid memberships and equals if Z_fx_soft is close to Z_fx ", {
   expect_no_error(
     stats_cols_soft <- sufficient_stats_cols(Y_fx, mask_fx, Z_fx_soft)

@@ -55,7 +55,7 @@ append before logs. Will not print anything if
 \code{verbose=FALSE}. Defaults to '' (empty string)}
     \item{\code{known_P}}{NULL (default) or a matrix (\eqn{n_1\times K-1}) indicating the known latent correlated position used to compute probabilities of blocks}
     \item{\code{P_sampler}}{a function indicating the sampler to use for the P
-variable. Default to sample_P_metropolis_trick}
+variable. Default to sample_P_metropolis_trick_cpp_fast}
     \item{\code{rho}}{a double indicating the variance of the gaussian proposal distribution.}
     \item{\code{known_alpha}}{NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix}
     \item{\code{known_W}}{NULL (default) or a matrix (\eqn{n_2\times R})

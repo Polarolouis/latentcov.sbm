@@ -150,9 +150,17 @@ sample_P_metropolis_trick <- function(
 #' categorical log-likelihood over all blocks by the soft memberships of row
 #' `i`.
 #'
+#' This pure-R implementation follows the same RNG stream as
+#' [sample_P_metropolis_trick_soft_cpp_fast()] (permutation via
+#' `order(runif(n))` and per-coordinate normal plus one uniform per Metropolis
+#' step), so that with an identical seed the two generate the same sequence.
+#'
 #' @inheritParams sample_P_metropolis_trick
 #' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
 #'   probabilities (rows sum to 1) in lieu of a hard indicator matrix
+#' @param Theta Optional. The precision matrix \eqn{\Sigma^{-1}}. If `NULL`
+#'   (default) it is computed once as `solve(Sigma)`.
+#' @param ... Used to pass various args
 #'
 #' @return an updated matrix of latent positions, of the same size as `P`
 #' @export
@@ -163,42 +171,147 @@ sample_P_metropolis_trick_soft <- function(
   sigma2,
   minibatch = TRUE,
   niter_metropolis = 50L,
+  Theta = NULL,
   ...
 ) {
+  if (is.null(Theta)) {
+    Theta <- solve(Sigma)
+  }
   n <- nrow(P)
-  out_P <- array(
-    P,
-    dim = dim(P),
-    dimnames = list(
-      "Individual" = paste0("P", seq_len(nrow(P))),
-      "Coordinates" = seq_len(ncol(P))
-    )
-  )
-  row_order <- if (minibatch) sample(x = n, size = n) else seq(1, n)
-  for (ind_iter in seq(n)) {
-    i <- row_order[ind_iter]
-    for (iter_metro in seq(niter_metropolis)) {
-      Pi_candidate <- sample_Pi_given(
-        P = P,
-        Sigma = Sigma,
-        sigma2 = sigma2,
-        i = i
-      )
+  m <- ncol(P)
+  running_P <- P
+
+  # Permutation matching arma::randperm(n): `n` uniforms sorted by value,
+  # so that the pure-R sampler and the C++ fast sampler consume R's RNG in
+  # the same way and therefore generate the same sequence for the same seed.
+  row_order <- if (minibatch) order(runif(n)) else seq_len(n)
+
+  for (i in row_order) {
+    sd <- NULL
+    for (iter_metro in seq_len(niter_metropolis)) {
+      # Full conditional (see cond_Pi_fast), recomputed because the mean
+      # depends on the current P.
+      ci <- cond_Pi_fast(running_P, Theta, sigma2, i)
+      if (is.null(sd)) {
+        sd <- sqrt(ci$cov[1, 1])
+      }
+      Pi_candidate <- ci$mean + rnorm(m) * sd
+      Pi_old <- running_P[i, ]
 
       # Mixed-membership log-likelihood ratio:
       #   sum_k Z_soft[i,k] * (log ilrInv(P_i^cand)[k] - log ilrInv(P_i)[k])
       log_accept <- sum(
         Z[i, ] *
           (log(ilrInv(matrix(Pi_candidate, nrow = 1))) -
-            log(ilrInv(matrix(P[i, ], nrow = 1))))
+            log(ilrInv(matrix(Pi_old, nrow = 1))))
       )
-      log_u <- log(runif(n = 1))
+      log_u <- log(runif(1))
 
       if (log_u < log_accept) {
-        out_P[i, ] <- Pi_candidate
-        P[i, ] <- Pi_candidate
+        running_P[i, ] <- Pi_candidate
       }
     }
   }
-  return(out_P)
+
+  dimnames(running_P) <- list(
+    "Individual" = paste0("P", seq_len(n)),
+    "Coordinates" = seq_len(m)
+  )
+  return(running_P)
+}
+
+#' Fast Metropolis sampler for P with the clever proposition (precision-based)
+#'
+#' C++ Metropolis-Hastings sampler for the latent positions `P` that proposes
+#' every row from its full conditional using the **precision** matrix
+#' \eqn{\Theta = \Sigma^{-1}} instead of `Sigma`.
+#'
+#' For each row \eqn{i} the full conditional of `P[i, ]` is
+#' \deqn{N\!\left(-\frac{1}{\Theta_{ii}} \Theta_{i,-i} P_{-i},\;
+#'   \frac{\sigma^2}{\Theta_{ii}} I\right),}
+#' so the conditional mean is obtained with a single matrix-vector product
+#' (\eqn{O(nK)}) rather than a fresh \eqn{O(n^3)} solve of
+#' `Sigma[-i,-i]` per row (as `sample_P_metropolis_trick_cpp()` does).
+#' Since the proposal is drawn from this full conditional, the Gaussian terms
+#' cancel in the acceptance ratio and only the multinomial prior ratio
+#' remains, exactly as in `sample_P_metropolis_trick_cpp()`.
+#'
+#' @inheritParams sample_P_metropolis_trick_cpp
+#' @param Theta Optional. The precision matrix \eqn{\Sigma^{-1}}. If `NULL`
+#'   (default) it is computed once as `solve(Sigma)`, which is only carried
+#'   once per call and therefore negligible.
+#' @param ... Used to pass various args
+#'
+#' @return an updated matrix of latent positions, of the same size as `P`
+#'
+#' @seealso [sample_P_metropolis_trick_cpp()] for the `Sigma`-based analogue,
+#'   [sample_P_metropolis_trick_soft_cpp_fast()] for the soft-membership
+#'   version.
+#' @export
+sample_P_metropolis_trick_cpp_fast <- function(
+  P,
+  Z,
+  Sigma,
+  sigma2,
+  minibatch = TRUE,
+  niter_metropolis = 50L,
+  Theta = NULL,
+  ...
+) {
+  if (is.null(Theta)) {
+    Theta <- solve(Sigma)
+  }
+  sample_P_metropolis_trick_cpp_fast_impl(
+    P = P,
+    Z = Z,
+    Theta = Theta,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
+  )
+}
+
+#' Fast Metropolis sampler for P under soft memberships (precision-based)
+#'
+#' Precision-based, C++ analogue of [sample_P_metropolis_trick_soft()] for the
+#' mixed-membership latent covariance SBM. Proposes every row of `P` from its
+#' full conditional given the precision matrix `Theta` (see
+#' [sample_P_metropolis_trick_cpp_fast()]) and accepts with the
+#' *mixed-membership* ratio
+#' \deqn{\sum_k Z^\text{soft}_{i,k}\,
+#'   \left[\log p_k(P_i^\text{cand}) - \log p_k(P_i)\right],}
+#' where \eqn{p_k} is the membership probability of block \eqn{k} obtained
+#' through the inverse pivot coordinates.
+#'
+#' @inheritParams sample_P_metropolis_trick_cpp_fast
+#' @param Z a matrix (\eqn{n_1 \times K}) of **soft** membership
+#'   probabilities (rows sum to 1) in lieu of a hard indicator matrix
+#' @param ... Used to pass various args
+#'
+#' @return an updated matrix of latent positions, of the same size as `P`
+#'
+#' @seealso [sample_P_metropolis_trick_soft()] for the `Sigma`-based analogue,
+#'   [sample_P_metropolis_trick_cpp_fast()] for the hard-membership version.
+#' @export
+sample_P_metropolis_trick_soft_cpp_fast <- function(
+  P,
+  Z,
+  Sigma,
+  sigma2,
+  minibatch = TRUE,
+  niter_metropolis = 50L,
+  Theta = NULL,
+  ...
+) {
+  if (is.null(Theta)) {
+    Theta <- solve(Sigma)
+  }
+  sample_P_metropolis_trick_soft_cpp_fast_impl(
+    P = P,
+    Z = Z,
+    Theta = Theta,
+    sigma2 = sigma2,
+    minibatch = minibatch,
+    niter_metropolis = niter_metropolis
+  )
 }

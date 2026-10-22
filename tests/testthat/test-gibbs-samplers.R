@@ -326,6 +326,35 @@ test_that("cov Gibbs handles NAs and reports verbose iterations", {
   )
 })
 
+test_that("cov Gibbs handles NAs and reports verbose iterations with a trick sampler", {
+  set.seed(24)
+  out <- gibbs_sampling_lbm_cov_poisson(
+    Sigma = Sigma_fx,
+    Y = .ny_na,
+    K = 3,
+    R = 2,
+    niter = 5,
+    init_Z = .z_init,
+    init_W = .w_init,
+    P_sampler = sample_P_metropolis_trick_cpp
+  )
+  expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
+  expect_message(
+    gibbs_sampling_lbm_cov_poisson(
+      Sigma = Sigma_fx,
+      Y = .ny,
+      K = 3,
+      R = 2,
+      niter = 10,
+      init_Z = .z_init,
+      init_W = .w_init,
+      verbose = TRUE,
+      P_sampler = sample_P_metropolis_trick_cpp
+    ),
+    "Iter : 10"
+  )
+})
+
 # ---- mixed-membership latent covariance Poisson LBM --------------------------
 
 test_that("mixed-membership Gibbs returns soft membership draws summing to 1", {

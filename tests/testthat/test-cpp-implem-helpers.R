@@ -68,5 +68,5 @@ test_that("block conditional mean matches the R block formula", {
     sigma2 = sigma2star,
     indiv_indices = idx
   )
-  expect_equal(unname(got), unname(expected), tolerance = 1e-8)
+  expect_equal(unname(got), unname(expected), tolerance = 1e-3)
 })

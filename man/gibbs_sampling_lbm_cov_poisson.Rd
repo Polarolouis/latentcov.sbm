@@ -22,7 +22,7 @@ gibbs_sampling_lbm_cov_poisson(
   known_W = NULL,
   known_Z = NULL,
   known_rho = NULL,
-  P_sampler = sample_P_metropolis_trick_cpp,
+  P_sampler = sample_P_metropolis_trick_cpp_fast,
   minibatch = TRUE,
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
@@ -76,7 +76,7 @@ indicating the known columns block memberships}
 a priori proportions}
 
 \item{P_sampler}{a function indicating the sampler to use for the P
-variable. Default to sample_P_metropolis_trick}
+variable. Default to sample_P_metropolis_trick_cpp_fast}
 
 \item{minibatch}{Logical; if \code{TRUE} the update order
 for P will change on each Gibbs iteration}
