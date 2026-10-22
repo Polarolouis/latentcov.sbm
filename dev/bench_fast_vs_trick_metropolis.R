@@ -65,7 +65,7 @@ make_data <- function(K, npc, n2 = 30, sigma2 = 1) {
     P = P0,
     Z_hard = Z0,
     Z_soft = Z0s,
-    niter_metropolis = 10L
+    niter_metropolis = 1L
   )
 }
 
