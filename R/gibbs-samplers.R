@@ -42,7 +42,9 @@
 #' order(alpha %*% rho,decreasing=TRUE) to
 #' alleviate label-switching
 #' @param auto_save_path a path to auto save the chain to. Defaults to
-#' a temp file
+#' a temp file. If NULL is provided, disables auto-saving.
+#' @param save_every_each_iter an integer indicating the number of
+#' iter between auto-saves. Defaults to 100.
 #'
 #' @inheritParams sample_P_metropolis_classical rho
 #'
@@ -72,14 +74,15 @@ gibbs_sampling_lbm_poisson <- function(
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
   force_order = FALSE,
-  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds")
+  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
 ) {
   # Forcing future exports
   invisible(c(TOL))
 
-  if (verbose) {
+  if (verbose && !is.null(auto_save_path)) {
     cli::cli_inform(
-      "The state of the chain will be saved to {.file {auto_save_path}} at each iteration"
+      "The state of the chain will be saved to {.file {auto_save_path}} every {.val save_every_each_iter} iterations"
     )
   }
 
@@ -231,19 +234,19 @@ gibbs_sampling_lbm_poisson <- function(
     Z <- .one_hot(current_Z_memb, K)
     Z_array[iter, ] <- current_Z_memb
 
-    out_array <- assemble_and_save(
-      list(
-        W_array = W_array,
-        Z_array = Z_array,
-        rho_array = rho_array,
-        pi_array = pi_array,
-        alpha_array = alpha_array
-      ),
-      iter,
-      auto_save_path,
-      verbose,
-      pb
-    )
+    if (iter %% save_every_each_iter || iter == niter) {
+      out_array <- posterior::as_draws_array(list_arrays_to_stan(
+        array_list = list(
+          W_array = W_array,
+          Z_array = Z_array,
+          rho_array = rho_array,
+          pi_array = pi_array,
+          alpha_array = alpha_array
+        )
+      ))
+      auto_save(object = out_array, path = auto_save_path, verbose = verbose)
+    }
+    pb()
   }
 
   return(out_array)
@@ -327,14 +330,15 @@ gibbs_sampling_lbm_cov_poisson <- function(
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
-  auto_save_path = tempfile(pattern = "lbmcov_poisson_", fileext = ".Rds")
+  auto_save_path = tempfile(pattern = "lbmcov_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
 ) {
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
 
-  if (verbose) {
+  if (verbose && !is.null(auto_save_path)) {
     cli::cli_inform(
-      "The state of the chain will be saved to {.file {auto_save_path}} at each iteration"
+      "The state of the chain will be saved to {.file {auto_save_path}} every {.val save_every_each_iter} iterations"
     )
   }
 
@@ -533,20 +537,20 @@ gibbs_sampling_lbm_cov_poisson <- function(
     Z <- .one_hot(current_Z_memb, K)
     Z_array[iter, ] <- current_Z_memb
 
-    out_array <- assemble_and_save(
-      list(
-        sigma2_array = sigma2_array,
-        P_array = P_array,
-        W_array = W_array,
-        Z_array = Z_array,
-        rho_array = rho_array,
-        alpha_array = alpha_array
-      ),
-      iter,
-      auto_save_path,
-      verbose,
-      pb
-    )
+    if (iter %% save_every_each_iter || iter == niter) {
+      out_array <- posterior::as_draws_array(list_arrays_to_stan(
+        array_list = list(
+          sigma2_array = sigma2_array,
+          P_array = P_array,
+          W_array = W_array,
+          Z_array = Z_array,
+          rho_array = rho_array,
+          alpha_array = alpha_array
+        )
+      ))
+      auto_save(object = out_array, path = auto_save_path, verbose = verbose)
+    }
+    pb()
   }
 
   return(out_array)
@@ -613,13 +617,14 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   tol = TOL,
   verbose = FALSE,
   prefix = "",
-  auto_save_path = tempfile(pattern = "lbmcovsoft_poisson_", fileext = ".Rds")
+  auto_save_path = tempfile(pattern = "lbmcovsoft_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
 ) {
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
-  if (verbose) {
+  if (verbose && !is.null(auto_save_path)) {
     cli::cli_inform(
-      "The state of the chain will be saved to {.file {auto_save_path}} at each iteration"
+      "The state of the chain will be saved to {.file {auto_save_path}} every {.val save_every_each_iter} iterations"
     )
   }
   # Initialize the whole arrays of variables
@@ -800,20 +805,21 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
       stats = stats_rows
     )
     Z_post_probs_array[iter, , ] <- Z_post_probs
-    out_array <- assemble_and_save(
-      list(
-        sigma2_array = sigma2_array,
-        P_array = P_array,
-        W_array = W_array,
-        Z_post_probs_array = Z_post_probs_array,
-        rho_array = rho_array,
-        alpha_array = alpha_array
-      ),
-      iter,
-      auto_save_path,
-      verbose,
-      pb
-    )
+
+    if (iter %% save_every_each_iter || iter == niter) {
+      out_array <- posterior::as_draws_array(list_arrays_to_stan(
+        array_list = list(
+          sigma2_array = sigma2_array,
+          P_array = P_array,
+          W_array = W_array,
+          Z_post_probs_array = Z_post_probs_array,
+          rho_array = rho_array,
+          alpha_array = alpha_array
+        )
+      ))
+      auto_save(object = out_array, path = auto_save_path, verbose = verbose)
+    }
+    pb()
   }
 
   return(out_array)

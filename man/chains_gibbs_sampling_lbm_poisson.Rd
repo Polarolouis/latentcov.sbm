@@ -58,6 +58,8 @@ a priori proportions}
 decreasing marginals order(pi\%\emph{\%alpha,decreasing=TRUE) and
 order(alpha \%}\% rho,decreasing=TRUE) to
 alleviate label-switching}
+    \item{\code{save_every_each_iter}}{an integer indicating the number of
+iter between auto-saves. Defaults to 100.}
     \item{\code{rho}}{a double indicating the variance of the gaussian proposal distribution.}
   }}
 }

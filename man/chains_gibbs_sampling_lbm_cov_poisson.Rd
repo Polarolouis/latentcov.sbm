@@ -63,6 +63,8 @@ indicating the known columns block memberships}
 indicating the known columns block memberships}
     \item{\code{known_rho}}{NULL (default) or a vectior (\eqn{R}) indicating the block
 a priori proportions}
+    \item{\code{save_every_each_iter}}{an integer indicating the number of
+iter between auto-saves. Defaults to 100.}
   }}
 }
 \value{

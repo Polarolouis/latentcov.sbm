@@ -26,7 +26,8 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership(
   tol = TOL,
   verbose = FALSE,
   prefix = "",
-  auto_save_path = tempfile(pattern = "lbmcovsoft_poisson_", fileext = ".Rds")
+  auto_save_path = tempfile(pattern = "lbmcovsoft_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
 )
 }
 \arguments{
@@ -92,6 +93,9 @@ append before logs. Will not print anything if
 \code{verbose=FALSE}. Defaults to '' (empty string)}
 
 \item{auto_save_path}{the path to which results will be autosaved}
+
+\item{save_every_each_iter}{an integer indicating the number of
+iter between auto-saves. Defaults to 100.}
 }
 \value{
 A list with sampled trajectories:

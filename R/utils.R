@@ -812,10 +812,12 @@ auto_save <- function(
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   call = rlang::caller_env()
 ) {
-  if (!is.null(message) && verbose) {
-    cli::cli_inform(message = message, call = call)
+  if (!is.null(path)) {
+    if (!is.null(message) && verbose) {
+      cli::cli_inform(message = message, call = call)
+    }
+    saveRDS(object, path)
   }
-  saveRDS(object, path)
   return(invisible(path))
 }
 
