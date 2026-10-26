@@ -158,26 +158,6 @@ report_iteration <- function(iter, niter, prefix, pb) {
   )
 }
 
-#' Assemble the draws array of an iteration and auto-save it if due
-#'
-#' @param out_list a named list of trajectory arrays
-#' @param iter the current iteration
-#' @param auto_save_path the path to which the chain is auto-saved
-#' @param verbose logical; passed to [auto_save()]
-#' @param pb a progressr progressor to tick at the end of the iteration
-#'
-#' @return the assembled `posterior` draws array for the current iteration
-#' @keywords internal
-assemble_and_save <- function(out_list, iter, auto_save_path, verbose, pb) {
-  out_array <- posterior::as_draws_array(list_arrays_to_stan(
-    array_list = out_list
-  ))
-  if (iter %% 100 == 0) {
-    auto_save(object = out_array, path = auto_save_path, verbose = verbose)
-  }
-  pb()
-  out_array
-}
 
 #' Run several independent Gibbs chains concurrently
 #'

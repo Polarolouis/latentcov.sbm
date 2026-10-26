@@ -22,7 +22,8 @@ gibbs_sampling_lbm_poisson(
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
   force_order = FALSE,
-  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds")
+  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
 )
 }
 \arguments{
@@ -82,7 +83,10 @@ order(alpha \%}\% rho,decreasing=TRUE) to
 alleviate label-switching}
 
 \item{auto_save_path}{a path to auto save the chain to. Defaults to
-a temp file}
+a temp file. If NULL is provided, disables auto-saving.}
+
+\item{save_every_each_iter}{an integer indicating the number of
+iter between auto-saves. Defaults to 100.}
 }
 \value{
 A list with sampled trajectories:

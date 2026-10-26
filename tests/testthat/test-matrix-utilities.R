@@ -78,6 +78,14 @@ test_that("auto_save writes an .Rds and returns its path invisibly", {
   expect_invisible(auto_save(obj, tempfile(fileext = ".Rds"), verbose = FALSE))
 })
 
+test_that("auto_save returns an invisible NULL if the path is NULL", {
+  obj <- list(a = 1, b = 2)
+  path <- NULL
+  expect_no_message(auto_save(obj, path, verbose = TRUE))
+  expect_null(auto_save(obj, path, verbose = FALSE))
+  expect_invisible(auto_save(obj, path, verbose = FALSE))
+})
+
 # --- .onLoad ------------------------------------------------------------------
 
 test_that(".onLoad registers the verbose option", {
