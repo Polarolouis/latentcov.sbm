@@ -391,14 +391,14 @@ arma::mat sample_P_metropolis_trick_cpp_fast(arma::mat &P, arma::mat &Z,
     double sd = std::sqrt(sigma2 / Theta_ii);
     // Precision-matrix row products (Theta only heterogeneous through row i).
     arma::subview_row<double> Theta_i = Theta.row(i);
-    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
-      // Conditional mean: mu = -(1/Theta_ii) * Theta[i,-i] %*% P[-i,]
-      rowvec mu(q, arma::fill::zeros);
-      for (int j = 0; j < n; ++j) {
-        if (j == i) continue;
-        mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
-      }
+    // Conditional mean: mu = -(1/Theta_ii) * Theta[i,-i] %*% P[-i,]
+    rowvec mu(q, arma::fill::zeros);
+    for (int j = 0; j < n; ++j) {
+      if (j == i) continue;
+      mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
+    }
 
+    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
       // Draw along R's RNG stream exactly as rmvnorm does in the Sigma-based
       // trick samplers (one Rcpp::rnorm per coordinate), so that the two share
       // the same RNG consumption and the same `.Random.seed` evolution.
@@ -497,13 +497,13 @@ arma::mat sample_P_metropolis_trick_soft_cpp_fast(arma::mat &P, arma::mat &Z,
     }
     double sd = std::sqrt(sigma2 / Theta_ii);
     arma::subview_row<double> Theta_i = Theta.row(i);
-    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
-      rowvec mu(q, arma::fill::zeros);
-      for (int j = 0; j < n; ++j) {
-        if (j == i) continue;
-        mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
-      }
+    rowvec mu(q, arma::fill::zeros);
+    for (int j = 0; j < n; ++j) {
+      if (j == i) continue;
+      mu -= (Theta_i(j) / Theta_ii) * running_P.row(j);
+    }
 
+    for (int iter_metro = 0; iter_metro < niter_metropolis; ++iter_metro) {
       // Draw along R's RNG stream exactly as rmvnorm does in the Sigma-based
       // trick samplers (one Rcpp::rnorm per coordinate), so that the two share
       // the same RNG consumption and the same `.Random.seed` evolution.
