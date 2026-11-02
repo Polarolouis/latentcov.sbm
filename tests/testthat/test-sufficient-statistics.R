@@ -132,10 +132,10 @@ test_that("soft sufficient statistics are mask-aware (NA cells not counted)", {
   expect_false(isTRUE(all.equal(rate_mask, rate_all)))
 })
 
-test_that("multinom_probs_Z accepts both a vector prior and a matrix prior", {
+test_that("multinom_probs_Z_poisson accepts both a vector prior and a matrix prior", {
   stats_rows <- sufficient_stats_rows(Y_fx, mask_fx, W_fx)
-  p_vec <- multinom_probs_Z(stats_rows, alpha_fx, pi_fx)
-  p_mat <- multinom_probs_Z(stats_rows, alpha_fx, ilrInv(P_fx))
+  p_vec <- multinom_probs_Z_poisson(stats_rows, alpha_fx, pi_fx)
+  p_mat <- multinom_probs_Z_poisson(stats_rows, alpha_fx, ilrInv(P_fx))
   expect_equal(dim(p_vec), c(n1_fx, K_fx))
   expect_equal(dim(p_mat), c(n1_fx, K_fx))
   expect_true(all(abs(rowSums(p_vec) - 1) < 1e-10))

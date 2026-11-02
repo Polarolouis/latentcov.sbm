@@ -193,7 +193,7 @@ param_multinom_probs_Z_poisson <- function(
   if (is.null(stats)) {
     stats <- sufficient_stats_rows(Y, mask, W)
   }
-  multinom_probs_Z(stats, alpha, pi, tol = tol)
+  multinom_probs_Z_poisson(stats, alpha, pi, tol = tol)
 }
 
 ## END OF CLASSICAL LBM
@@ -261,7 +261,7 @@ param_multinom_probs_Z_cov_poisson <- function(
   if (is.null(stats)) {
     stats <- sufficient_stats_rows(Y, mask, W)
   }
-  multinom_probs_Z(stats, alpha, ilrInv(P), tol = tol)
+  multinom_probs_Z_poisson(stats, alpha, ilrInv(P), tol = tol)
 }
 
 # W | alpha, rho, Y, Z
@@ -297,7 +297,7 @@ param_multinom_probs_W_poisson <- function(
   if (is.null(stats)) {
     stats <- sufficient_stats_cols(Y, mask, Z)
   }
-  multinom_probs_W(stats, alpha, rho, tol = tol)
+  multinom_probs_W_poisson(stats, alpha, rho, tol = tol)
 }
 
 # alpha | Y,Z,W

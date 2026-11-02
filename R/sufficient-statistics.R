@@ -102,7 +102,7 @@ alpha_params_from_stats_cols <- function(a0, b0, W, stats_cols) {
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
 #' @keywords internal
-multinom_probs_Z <- function(stats_rows, alpha, row_prior, tol = TOL) {
+multinom_probs_Z_poisson <- function(stats_rows, alpha, row_prior, tol = TOL) {
   if (is.matrix(row_prior)) {
     prior_term <- log(row_prior)
   } else {
@@ -129,7 +129,7 @@ multinom_probs_Z <- function(stats_rows, alpha, row_prior, tol = TOL) {
 #'
 #' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
 #' @keywords internal
-multinom_probs_W <- function(stats_cols, alpha, rho, tol = TOL) {
+multinom_probs_W_poisson <- function(stats_cols, alpha, rho, tol = TOL) {
   unormalized_log_probs <- matrix(1, nrow = nrow(stats_cols$R_Z)) %*%
     log(rho) +
     stats_cols$R_Z %*% log(alpha) -
