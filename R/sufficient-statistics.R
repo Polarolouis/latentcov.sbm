@@ -17,15 +17,26 @@
 #'   and 0 for NAs
 #' @param W the column memberships as an (\eqn{n_2 \times R}) one-hot matrix
 #'   (hard) or a probability matrix (soft)
+#' @param emission a string indicating the emission distribution for
+#'  which to compute sufficient statistics. Defaults to "poisson"
 #'
 #' @return a list with `R_W` (\eqn{n_1 \times R}) and `N_W` (\eqn{n_1 \times R})
 #' @keywords internal
-sufficient_stats_rows <- function(Y, mask, W) {
+sufficient_stats_rows <- function(Y, mask, W, emission = "poisson") {
   Y_obs <- mask_observed(Y, mask)
-  list(
-    R_W = Y_obs %*% W,
-    N_W = mask %*% W
+  switch(
+    emission,
+    "poisson" = {
+      out <- list(
+        R_W = Y_obs %*% W,
+        N_W = mask %*% W
+      )
+    },
+    "bernoulli" = {
+      out <- list(R_W = Y_obs %*% W, F_W = (1 - Y_obs) %*% W)
+    }
   )
+  return(out)
 }
 
 #' Column sufficient statistics of a Poisson LBM iteration
@@ -39,15 +50,31 @@ sufficient_stats_rows <- function(Y, mask, W) {
 #'   and 0 for NAs
 #' @param Z the row memberships as an (\eqn{n_1 \times K}) one-hot matrix
 #'   (hard) or a probability matrix (soft)
+#' @param emission a string indicating the emission distribution for
+#'  which to compute sufficient statistics. Defaults to "poisson"
+#'
 #'
 #' @return a list with `R_Z` (\eqn{n_2 \times K}) and `N_Z` (\eqn{n_2 \times K})
 #' @keywords internal
-sufficient_stats_cols <- function(Y, mask, Z) {
+sufficient_stats_cols <- function(Y, mask, Z, emission = "poisson") {
   Y_obs <- mask_observed(Y, mask)
-  list(
-    R_Z = t(Y_obs) %*% Z,
-    N_Z = t(mask) %*% Z
+  rlang::arg_match(arg = emission, values = c("poisson", "bernoulli"))
+  switch(
+    emission,
+    "poisson" = {
+      out <- list(
+        R_Z = t(Y_obs) %*% Z,
+        N_Z = t(mask) %*% Z
+      )
+    },
+    "bernoulli" = {
+      out <- list(
+        R_Z = t(Y_obs) %*% Z,
+        F_Z = (1 - t(Y_obs)) %*% Z
+      )
+    }
   )
+  return(out)
 }
 
 #' Combined sufficient statistics of a Poisson LBM iteration
@@ -60,9 +87,9 @@ sufficient_stats_cols <- function(Y, mask, Z) {
 #'
 #' @return a list with `R_W`, `N_W`, `R_Z`, `N_Z`
 #' @keywords internal
-sufficient_stats <- function(Y, mask, Z, W) {
-  cols <- sufficient_stats_cols(Y, mask, Z)
-  rows <- sufficient_stats_rows(Y, mask, W)
+sufficient_stats <- function(Y, mask, Z, W, emission = "poisson") {
+  cols <- sufficient_stats_cols(Y, mask, Z, emission = emission)
+  rows <- sufficient_stats_rows(Y, mask, W, emission = emission)
   c(cols, rows)
 }
 
@@ -79,10 +106,29 @@ sufficient_stats <- function(Y, mask, Z, W) {
 #'
 #' @return a list with `shape` and `rate` matrices (\eqn{K \times R})
 #' @keywords internal
-alpha_params_from_stats_cols <- function(a0, b0, W, stats_cols) {
+alpha_params_from_stats_cols_poisson <- function(a0, b0, W, stats_cols) {
   list(
     shape = a0 + t(stats_cols$R_Z) %*% W,
     rate = b0 + t(stats_cols$N_Z) %*% W
+  )
+}
+
+#' Posterior Beta parameters of the connectivity matrix `alpha`
+#'
+#' Derives the shape and rate of the full conditional
+#' \eqn{\alpha \mid Y, Z, W} from the column sufficient statistics.
+#'
+#' @param a0 prior shape1 parameter of the Beta
+#' @param b0 prior shape2 parameter of the Beta
+#' @param W the column memberships as an (\eqn{n_2 \times R}) one-hot matrix
+#' @param stats_cols a list returned by [sufficient_stats_cols()]
+#'
+#' @return a list with `shape1` and `shape2` matrices (\eqn{K \times R})
+#' @keywords internal
+alpha_params_from_stats_cols_bernoulli <- function(a0, b0, W, stats_cols) {
+  list(
+    shape1 = a0 + t(stats_cols$R_Z) %*% W,
+    shape2 = b0 + t(stats_cols$F_Z) %*% W
   )
 }
 
@@ -115,6 +161,40 @@ multinom_probs_Z_poisson <- function(stats_rows, alpha, row_prior, tol = TOL) {
   row_normalize_matrix(unormalized_log_probs, tol = tol)
 }
 
+#' Multinomial probabilities of the row memberships
+#'
+#' Computes the normalized conditional probabilities of each row-node block
+#' membership from the row sufficient statistics and a per-row prior over the
+#' blocks.
+#'
+#' @param stats_rows a list returned by [sufficient_stats_rows()]
+#' @param alpha a matrix (\eqn{K \times R}) of connectivity coefficients
+#' @param row_prior the row block proportions: either a vector of size K
+#'   (`pi`, broadcast over rows) or an (\eqn{n_1 \times K}) matrix of per-row
+#'   probabilities (`ilrInv(P)`)
+#' @param tol Numeric; a small number used to clamp probabilities to
+#'   `[tol, 1-tol]`. Defaults to `TOL`.
+#'
+#' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
+#' @keywords internal
+multinom_probs_Z_bernoulli <- function(
+  stats_rows,
+  alpha,
+  row_prior,
+  tol = TOL
+) {
+  if (is.matrix(row_prior)) {
+    prior_term <- log(row_prior)
+  } else {
+    prior_term <- matrix(1, nrow = nrow(stats_rows$R_W)) %*% log(row_prior)
+  }
+  unormalized_log_probs <- prior_term +
+    stats_rows$R_W %*% log(t(alpha)) +
+    stats_rows$F_W %*% log(1 - t(alpha))
+
+  row_normalize_matrix(unormalized_log_probs, tol = tol)
+}
+
 #' Multinomial probabilities of the column memberships
 #'
 #' Computes the normalized conditional probabilities of each column-node block
@@ -134,6 +214,30 @@ multinom_probs_W_poisson <- function(stats_cols, alpha, rho, tol = TOL) {
     log(rho) +
     stats_cols$R_Z %*% log(alpha) -
     stats_cols$N_Z %*% alpha
+
+  row_normalize_matrix(unormalized_log_probs, tol = tol)
+}
+
+
+#' Multinomial probabilities of the column memberships
+#'
+#' Computes the normalized conditional probabilities of each column-node block
+#' membership from the column sufficient statistics and the column block
+#' proportions.
+#'
+#' @param stats_cols a list returned by [sufficient_stats_cols()]
+#' @param alpha a matrix (\eqn{K \times R}) of connectivity coefficients
+#' @param rho a vector of size R containing the column block proportions
+#' @param tol Numeric; a small number used to clamp probabilities to
+#'   `[tol, 1-tol]`. Defaults to `TOL`.
+#'
+#' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
+#' @keywords internal
+multinom_probs_W_bernoulli <- function(stats_cols, alpha, rho, tol = TOL) {
+  unormalized_log_probs <- matrix(1, nrow = nrow(stats_cols$R_Z)) %*%
+    log(rho) +
+    stats_cols$R_Z %*% log(alpha) +
+    stats_cols$F_Z %*% log(1 - alpha)
 
   row_normalize_matrix(unormalized_log_probs, tol = tol)
 }

@@ -191,9 +191,42 @@ param_multinom_probs_Z_poisson <- function(
   stats = NULL
 ) {
   if (is.null(stats)) {
-    stats <- sufficient_stats_rows(Y, mask, W)
+    stats <- sufficient_stats_rows(Y, mask, W, emission = "poisson")
   }
   multinom_probs_Z_poisson(stats, alpha, pi, tol = tol)
+}
+
+#' Compute multinomial probabilities of Z in the classical Poisson LBM
+#'
+#' Computes the normalized conditional probabilities
+#' \eqn{Z_i \mid \alpha, W, Y, \pi} of each row-node block membership
+#' under a Poisson latent block model.
+#'
+#' @inheritParams param_multinom_probs_Z_cov_poisson
+#' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
+#' indicating the membership of column node \eqn{j}
+#' @param pi a vector of size K containing the row block proportions
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
+#' @param tol Numeric; a small number used to clamp probabilities to
+#' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
+#' @param stats optional; a list returned by [sufficient_stats_rows()] to reuse
+#' already-computed aggregates instead of recomputing them from `Y`, `mask`
+#' and `W`.
+#'
+#' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
+param_multinom_probs_Z_bernoulli <- function(
+  Y,
+  alpha,
+  W,
+  pi,
+  mask,
+  tol = TOL,
+  stats = NULL
+) {
+  if (is.null(stats)) {
+    stats <- sufficient_stats_rows(Y, mask, W, emission = "bernoulli")
+  }
+  multinom_probs_Z_bernoulli(stats, alpha, pi, tol = tol)
 }
 
 ## END OF CLASSICAL LBM
@@ -259,9 +292,44 @@ param_multinom_probs_Z_cov_poisson <- function(
   stats = NULL
 ) {
   if (is.null(stats)) {
-    stats <- sufficient_stats_rows(Y, mask, W)
+    stats <- sufficient_stats_rows(Y, mask, W, emission = "poisson")
   }
   multinom_probs_Z_poisson(stats, alpha, ilrInv(P), tol = tol)
+}
+
+#' Compute multinomial probabilities of Z in the latent covariance Bernoulli LBM
+#'
+#' Computes the normalized conditional probabilities
+#' \eqn{Z_i \mid \alpha, W, Y, P} of each row-node block membership
+#' under a Bernoulli latent block model with latent correlated positions.
+#' The probabilities are derived from the latent positions through their
+#' inverse pivot coordinates.
+#'
+#' @inheritParams param_multinom_probs_W_bernoulli
+#' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
+#' indicating the membership of column node \eqn{j}
+#' @param P a matrix of size \eqn{n_1 \times K-1} specifying latent positions
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
+#' @param tol Numeric; a small number used to clamp probabilities to
+#' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
+#' @param stats optional; a list returned by [sufficient_stats_rows()] to reuse
+#' already-computed aggregates instead of recomputing them from `Y`, `mask`
+#' and `W`.
+#'
+#' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
+param_multinom_probs_Z_cov_bernoulli <- function(
+  Y,
+  alpha,
+  W,
+  P,
+  mask,
+  tol = TOL,
+  stats = NULL
+) {
+  if (is.null(stats)) {
+    stats <- sufficient_stats_rows(Y, mask, W, emission = "bernoulli")
+  }
+  multinom_probs_Z_bernoulli(stats, alpha, ilrInv(P), tol = tol)
 }
 
 # W | alpha, rho, Y, Z
@@ -295,10 +363,45 @@ param_multinom_probs_W_poisson <- function(
   stats = NULL
 ) {
   if (is.null(stats)) {
-    stats <- sufficient_stats_cols(Y, mask, Z)
+    stats <- sufficient_stats_cols(Y, mask, Z, emission = "poisson")
   }
   multinom_probs_W_poisson(stats, alpha, rho, tol = tol)
 }
+
+#' Compute multinomial probabilities of W in the Bernoulli LBM
+#'
+#' Computes the normalized conditional probabilities
+#' \eqn{W_j \mid \alpha, Z, Y, \rho} of each column-node block membership
+#' under a Poisson latent block model.
+#'
+#' @param Y Binary matrix of observed presence-absence.
+#' @param alpha a matrix (\eqn{K \times R}) of connectivity coefficients
+#' @param Z a matrix of size \eqn{n_1 \times K} with a single 1 per line
+#' indicating the membership of row node \eqn{i}
+#' @param rho a vector of size R containing the column block proportions
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
+#' @param tol Numeric; a small number used to clamp probabilities to
+#' \code{[tol, 1-tol]}. Default to \link{.Machine}$double.eps based tolerance
+#' @param stats optional; a list returned by [sufficient_stats_cols()] to reuse
+#' already-computed aggregates instead of recomputing them from `Y`, `mask`
+#' and `Z`.
+#'
+#' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
+param_multinom_probs_W_bernoulli <- function(
+  Y,
+  alpha,
+  Z,
+  rho,
+  mask,
+  tol = TOL,
+  stats = NULL
+) {
+  if (is.null(stats)) {
+    stats <- sufficient_stats_cols(Y, mask, Z, emission = "bernoulli")
+  }
+  multinom_probs_W_bernoulli(stats, alpha, rho, tol = tol)
+}
+
 
 # alpha | Y,Z,W
 
@@ -330,9 +433,9 @@ param_alpha_given_Y_Z_W_poisson <- function(
   stats_cols = NULL
 ) {
   if (is.null(stats_cols)) {
-    stats_cols <- sufficient_stats_cols(Y, mask, Z)
+    stats_cols <- sufficient_stats_cols(Y, mask, Z, emission = "poisson")
   }
-  alpha_params_from_stats_cols(a0, b0, W, stats_cols)
+  alpha_params_from_stats_cols_poisson(a0, b0, W, stats_cols)
 }
 
 #' Sample the connectivity matrix alpha
@@ -346,4 +449,53 @@ param_alpha_given_Y_Z_W_poisson <- function(
 #' @return a matrix (\eqn{K \times R}) of sampled connectivity coefficients
 sample_alpha_given_Y_Z_W_poisson <- function(shape, rate) {
   matrix(rgamma(length(shape), shape = shape, rate = rate), nrow = nrow(shape))
+}
+
+#' Compute posterior parameters for the Gamma connectivity coefficients
+#'
+#' Computes the shape and rate matrices of the full conditional
+#' \eqn{\alpha \mid Y, Z, W} whose entries follow independent Gamma distributions.
+#'
+#' @param a0 prior shape parameter of the Gamma
+#' @param b0 prior rate parameter of the Gamma
+#' @param Y Non-negative integer matrix of observed counts.
+#' @param Z a matrix of size \eqn{n_1 \times K} with a single 1 per line
+#' indicating the membership of row node \eqn{i}
+#' @param W a matrix of size \eqn{n_2 \times R} with a single 1 per line
+#' indicating the membership of column node \eqn{j}
+#' @param mask a matrix of size \eqn{n_1 \times n_2} containing 1 for observed values and 0 for NA.
+#' @param stats_cols optional; a list returned by [sufficient_stats_cols()] to
+#' reuse already-computed aggregates instead of recomputing them from `Y`,
+#' `mask` and `Z`.
+#'
+#' @return a list with `shape` and `rate` matrices (\eqn{K \times R}) of the posterior Gamma parameters
+param_alpha_given_Y_Z_W_bernoulli <- function(
+  a0,
+  b0,
+  Y,
+  Z,
+  W,
+  mask,
+  stats_cols = NULL
+) {
+  if (is.null(stats_cols)) {
+    stats_cols <- sufficient_stats_cols(Y, mask, Z, emission = "bernoulli")
+  }
+  alpha_params_from_stats_cols_bernoulli(a0, b0, W, stats_cols)
+}
+
+#' Sample the connectivity matrix alpha
+#'
+#' Draws each entry of the connectivity matrix independently from its
+#' Beta full-conditional distribution.
+#'
+#' @param shape1 a matrix (\eqn{K \times R}) containing the shape1 parameter from which to sample
+#' @param shape2 a matrix (\eqn{K \times R}) containing the shape2 parameter from which to sample
+#'
+#' @return a matrix (\eqn{K \times R}) of sampled connectivity coefficients
+sample_alpha_given_Y_Z_W_bernoulli <- function(shape1, shape2) {
+  matrix(
+    rbeta(length(shape1), shape1 = shape1, shape2 = shape2),
+    nrow = nrow(shape1)
+  )
 }
