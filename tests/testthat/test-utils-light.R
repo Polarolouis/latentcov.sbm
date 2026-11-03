@@ -19,3 +19,16 @@ test_that("extract_MAP_draws can extract W var", {
     W_posterior_probs
   )
 })
+
+# Computation functions
+
+test_that(".log is safe", {
+  normal_x <- c(seq(0.1, 10, by = 0.1))
+  smallest_x <- .Machine[["double.xmin"]]
+  expect_equal(.log(normal_x), log(normal_x))
+  # the last accurate value
+  expect_equal(.log(smallest_x), log(smallest_x))
+  # And safety gard
+  expect_equal(log(0), -Inf)
+  expect_equal(.log(0), log(smallest_x))
+})

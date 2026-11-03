@@ -90,6 +90,7 @@ Y_fx <- matrix(
   byrow = TRUE
 )
 mask_fx <- (!is.na(Y_fx)) * 1L
+Y_fx_bern <- (Y_fx > 2) * 1L
 
 # A tiny positive-definite Sigma for sampler-level tests.
 Sigma_spd_fx <- diag(6) * 1 + 0.1

@@ -150,12 +150,12 @@ alpha_params_from_stats_cols_bernoulli <- function(a0, b0, W, stats_cols) {
 #' @keywords internal
 multinom_probs_Z_poisson <- function(stats_rows, alpha, row_prior, tol = TOL) {
   if (is.matrix(row_prior)) {
-    prior_term <- log(row_prior)
+    prior_term <- .log(row_prior)
   } else {
-    prior_term <- matrix(1, nrow = nrow(stats_rows$R_W)) %*% log(row_prior)
+    prior_term <- matrix(1, nrow = nrow(stats_rows$R_W)) %*% .log(row_prior)
   }
   unormalized_log_probs <- prior_term +
-    stats_rows$R_W %*% log(t(alpha)) -
+    stats_rows$R_W %*% .log(t(alpha)) -
     stats_rows$N_W %*% t(alpha)
 
   row_normalize_matrix(unormalized_log_probs, tol = tol)
@@ -184,13 +184,13 @@ multinom_probs_Z_bernoulli <- function(
   tol = TOL
 ) {
   if (is.matrix(row_prior)) {
-    prior_term <- log(row_prior)
+    prior_term <- .log(row_prior)
   } else {
-    prior_term <- matrix(1, nrow = nrow(stats_rows$R_W)) %*% log(row_prior)
+    prior_term <- matrix(1, nrow = nrow(stats_rows$R_W)) %*% .log(row_prior)
   }
   unormalized_log_probs <- prior_term +
-    stats_rows$R_W %*% log(t(alpha)) +
-    stats_rows$F_W %*% log(1 - t(alpha))
+    stats_rows$R_W %*% .log(t(alpha)) +
+    stats_rows$F_W %*% .log(1 - t(alpha))
 
   row_normalize_matrix(unormalized_log_probs, tol = tol)
 }
@@ -211,8 +211,8 @@ multinom_probs_Z_bernoulli <- function(
 #' @keywords internal
 multinom_probs_W_poisson <- function(stats_cols, alpha, rho, tol = TOL) {
   unormalized_log_probs <- matrix(1, nrow = nrow(stats_cols$R_Z)) %*%
-    log(rho) +
-    stats_cols$R_Z %*% log(alpha) -
+    .log(rho) +
+    stats_cols$R_Z %*% .log(alpha) -
     stats_cols$N_Z %*% alpha
 
   row_normalize_matrix(unormalized_log_probs, tol = tol)
@@ -235,9 +235,9 @@ multinom_probs_W_poisson <- function(stats_cols, alpha, rho, tol = TOL) {
 #' @keywords internal
 multinom_probs_W_bernoulli <- function(stats_cols, alpha, rho, tol = TOL) {
   unormalized_log_probs <- matrix(1, nrow = nrow(stats_cols$R_Z)) %*%
-    log(rho) +
-    stats_cols$R_Z %*% log(alpha) +
-    stats_cols$F_Z %*% log(1 - alpha)
+    .log(rho) +
+    stats_cols$R_Z %*% .log(alpha) +
+    stats_cols$F_Z %*% .log(1 - alpha)
 
   row_normalize_matrix(unormalized_log_probs, tol = tol)
 }

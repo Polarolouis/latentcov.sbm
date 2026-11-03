@@ -880,3 +880,22 @@ known_membership_to_labels <- function(memb) {
   }
   as.integer(memb)
 }
+
+#' a safe log to prevent NaN production
+#'
+#' @param x the x to log
+#' @param eps the minimal value on which not to apply log. Defaults
+#' to .Machine[["double.xmin"]].  If NULL returns the log.
+#'
+#' @keywords internal
+.log <- function(x, eps = .Machine[["double.xmin"]]) {
+  if (is.null(eps)) {
+    res <- log(x)
+  } else {
+    # OPTIM
+    # x[x >= 1 - eps] <- 1 - eps
+    x[x <= eps] <- eps
+    res <- log(x)
+  }
+  return(res)
+}
