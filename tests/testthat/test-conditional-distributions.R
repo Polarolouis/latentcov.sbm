@@ -300,8 +300,10 @@ test_that("sample_alpha_given_Y_Z_W_poisson matches the Gamma moments", {
   draws <- replicate(5000, sample_alpha_given_Y_Z_W_poisson(shape, rate))
   expect_equal(dim(draws), c(2, 2, 5000))
   expect_true(all(draws > 0))
-  expect_equal(mean(draws[1, 1, ]), shape[1, 1] / rate[1, 1], tolerance = 0.15)
-  expect_equal(mean(draws[2, 2, ]), shape[2, 2] / rate[2, 2], tolerance = 0.15)
+  mean_sampled_alpha <- apply(draws, 1:2, mean)
+  expect_equal(mean_sampled_alpha, shape / rate, tolerance = 0.1)
+  var_sampled_alpha <- apply(draws, 1:2, var)
+  expect_equal(var_sampled_alpha, shape / rate^2, tolerance = 0.1)
 })
 
 test_that("param_alpha_given_Y_Z_W_bernoulli sums counts per block pair", {
@@ -322,6 +324,25 @@ test_that("param_alpha_given_Y_Z_W_bernoulli sums counts per block pair", {
   expect_equal(
     res[["shape2"]],
     0.1 + t(Z_fx) %*% (1 - mask_observed(Y_fx_bern, mask_fx)) %*% W_fx
+  )
+})
+
+
+test_that("sample_alpha_given_Y_Z_W_bernoulli matches the Beta moments", {
+  set.seed(508L)
+  shape1 <- matrix(c(5, 1, 2, 3), 2, 2)
+  shape2 <- matrix(c(2, 1, 1, 6), 2, 2)
+  draws <- replicate(5000, sample_alpha_given_Y_Z_W_bernoulli(shape1, shape2))
+  expect_equal(dim(draws), c(2, 2, 5000))
+  expect_true(all(draws > 0))
+  expect_true(all(draws < 1))
+  mean_sampled_alpha <- apply(draws, 1:2, mean)
+  var_sampled_alpha <- apply(draws, 1:2, var)
+  expect_equal(mean_sampled_alpha, shape1 / (shape1 + shape2), tolerance = 0.05)
+  expect_equal(
+    var_sampled_alpha,
+    (shape1 * shape2) / ((shape1 + shape2)^2 * (shape1 + shape2 + 1)),
+    tolerance = 0.05
   )
 })
 

@@ -28,7 +28,10 @@ test_that(".log is safe", {
   expect_equal(.log(normal_x), log(normal_x))
   # the last accurate value
   expect_equal(.log(smallest_x), log(smallest_x))
-  # And safety gard
+  # And safety guard
   expect_equal(log(0), -Inf)
   expect_equal(.log(0), log(smallest_x))
+  # Safety guards can be disabled
+  expect_equal(.log(0, eps = NULL), -Inf)
+  expect_equal(.log(0, eps = NULL), log(0))
 })
