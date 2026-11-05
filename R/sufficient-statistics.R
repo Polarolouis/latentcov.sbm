@@ -24,6 +24,7 @@
 #' @keywords internal
 sufficient_stats_rows <- function(Y, mask, W, emission = "poisson") {
   Y_obs <- mask_observed(Y, mask)
+  check_emission_distribution(emission)
   switch(
     emission,
     "poisson" = {
@@ -58,7 +59,7 @@ sufficient_stats_rows <- function(Y, mask, W, emission = "poisson") {
 #' @keywords internal
 sufficient_stats_cols <- function(Y, mask, Z, emission = "poisson") {
   Y_obs <- mask_observed(Y, mask)
-  rlang::arg_match(arg = emission, values = c("poisson", "bernoulli"))
+  check_emission_distribution(emission)
   switch(
     emission,
     "poisson" = {
@@ -91,6 +92,58 @@ sufficient_stats <- function(Y, mask, Z, W, emission = "poisson") {
   cols <- sufficient_stats_cols(Y, mask, Z, emission = emission)
   rows <- sufficient_stats_rows(Y, mask, W, emission = emission)
   c(cols, rows)
+}
+
+#' Posterior parameters of the connectivity matrix `alpha`
+#'
+#' Derives the shape and rate of the full conditional
+#' \eqn{\alpha \mid Y, Z, W} from the column sufficient statistics
+#'
+#' @param ... the prior parameters for the alpha distribution
+#' @param W the column memberships as an (\eqn{n_2 \times R}) one-hot matrix
+#' @param stats_cols a list returned by [sufficient_stats_cols()]
+#'
+#' @details On the different emission distributions:
+#' \itemize{
+#'   \item{`bernoulli:`}{takes `a0` and `b0` as priors for the Beta distribution
+#' and outputs `shape1` and `shape2` the parameters for the
+#' a posteriori Beta distribution.}
+#'   \item{`poisson:`}{takes `a0` and `b0` as priors for the Gamma distribution
+#' and outputs `shape` and `rate` the parameters for the
+#' a posteriori Gamma distribution.}
+#' }
+#'
+#' @return a list containing the updated parameters for the `emission`
+#' distribution provided. See details for the exact names
+#' @keywords internal
+alpha_params_from_stats_cols <- function(
+  ...,
+  W,
+  stats_cols,
+  emission = "poisson"
+) {
+  check_emission_distribution(emission)
+  args <- rlang::list2(...)
+  # TODO Choose a priori parameters names that are more coherent with emission distribution
+  switch(
+    emission,
+    "poisson" = {
+      a0 <- args[["a0"]]
+      b0 <- args[["b0"]]
+      list(
+        shape = a0 + t(stats_cols$R_Z) %*% W,
+        rate = b0 + t(stats_cols$N_Z) %*% W
+      )
+    },
+    "bernoulli" = {
+      a0 <- args[["a0"]]
+      b0 <- args[["b0"]]
+      list(
+        shape1 = a0 + t(stats_cols$R_Z) %*% W,
+        shape2 = b0 + t(stats_cols$F_Z) %*% W
+      )
+    }
+  )
 }
 
 #' Posterior Gamma parameters of the connectivity matrix `alpha`
