@@ -10,7 +10,7 @@
 \item{x}{the x to log}
 
 \item{eps}{the minimal value on which not to apply log. Defaults
-to .Machine[\link{"double.xmin"}].  If NULL returns the log.}
+to \code{.Machine[["double.xmin"]]}.  If NULL returns the log.}
 }
 \description{
 a safe log to prevent NaN production

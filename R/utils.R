@@ -885,7 +885,7 @@ known_membership_to_labels <- function(memb) {
 #'
 #' @param x the x to log
 #' @param eps the minimal value on which not to apply log. Defaults
-#' to .Machine[["double.xmin"]].  If NULL returns the log.
+#' to `.Machine[["double.xmin"]]`.  If NULL returns the log.
 #'
 #' @keywords internal
 .log <- function(x, eps = .Machine[["double.xmin"]]) {
