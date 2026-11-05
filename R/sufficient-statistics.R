@@ -205,39 +205,52 @@ alpha_params_from_stats_cols_bernoulli <- function(a0, b0, W, stats_cols) {
 #' @param row_prior the row block proportions: either a vector of size K
 #'   (`pi`, broadcast over rows) or an (\eqn{n_1 \times K}) matrix of per-row
 #'   probabilities (`ilrInv(P)`)
+#' @param emission a string indicating the emission distribution for which to
+#'   compute the multinomial probabilities. Defaults to "poisson"
 #' @param tol Numeric; a small number used to clamp probabilities to
 #'   `[tol, 1-tol]`. Defaults to `TOL`.
 #'
 #' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
 #' @keywords internal
-multinom_probs_Z_poisson <- function(stats_rows, alpha, row_prior, tol = TOL) {
+multinom_probs_Z <- function(
+  stats_rows,
+  alpha,
+  row_prior,
+  emission = "poisson",
+  tol = TOL
+) {
+  check_emission_distribution(emission)
+
   if (is.matrix(row_prior)) {
     prior_term <- .log(row_prior)
   } else {
     prior_term <- matrix(1, nrow = nrow(stats_rows$R_W)) %*% .log(row_prior)
   }
-  unormalized_log_probs <- prior_term +
-    stats_rows$R_W %*% .log(t(alpha)) -
-    stats_rows$N_W %*% t(alpha)
 
-  row_normalize_matrix(unormalized_log_probs, tol = tol)
+  loglik_term <- switch(
+    emission,
+    "poisson" = stats_rows$R_W %*% .log(t(alpha)) - stats_rows$N_W %*% t(alpha),
+    "bernoulli" = stats_rows$R_W %*%
+      .log(t(alpha)) +
+      stats_rows$F_W %*% .log(1 - t(alpha))
+  )
+
+  row_normalize_matrix(prior_term + loglik_term, tol = tol)
 }
 
-#' Multinomial probabilities of the row memberships
-#'
-#' Computes the normalized conditional probabilities of each row-node block
-#' membership from the row sufficient statistics and a per-row prior over the
-#' blocks.
-#'
-#' @param stats_rows a list returned by [sufficient_stats_rows()]
-#' @param alpha a matrix (\eqn{K \times R}) of connectivity coefficients
-#' @param row_prior the row block proportions: either a vector of size K
-#'   (`pi`, broadcast over rows) or an (\eqn{n_1 \times K}) matrix of per-row
-#'   probabilities (`ilrInv(P)`)
-#' @param tol Numeric; a small number used to clamp probabilities to
-#'   `[tol, 1-tol]`. Defaults to `TOL`.
-#'
-#' @return a matrix (\eqn{n_1 \times K}) of normalized membership probabilities
+#' @rdname multinom_probs_Z
+#' @keywords internal
+multinom_probs_Z_poisson <- function(stats_rows, alpha, row_prior, tol = TOL) {
+  multinom_probs_Z(
+    stats_rows = stats_rows,
+    alpha = alpha,
+    row_prior = row_prior,
+    emission = "poisson",
+    tol = tol
+  )
+}
+
+#' @rdname multinom_probs_Z
 #' @keywords internal
 multinom_probs_Z_bernoulli <- function(
   stats_rows,
@@ -245,16 +258,13 @@ multinom_probs_Z_bernoulli <- function(
   row_prior,
   tol = TOL
 ) {
-  if (is.matrix(row_prior)) {
-    prior_term <- .log(row_prior)
-  } else {
-    prior_term <- matrix(1, nrow = nrow(stats_rows$R_W)) %*% .log(row_prior)
-  }
-  unormalized_log_probs <- prior_term +
-    stats_rows$R_W %*% .log(t(alpha)) +
-    stats_rows$F_W %*% .log(1 - t(alpha))
-
-  row_normalize_matrix(unormalized_log_probs, tol = tol)
+  multinom_probs_Z(
+    stats_rows = stats_rows,
+    alpha = alpha,
+    row_prior = row_prior,
+    emission = "bernoulli",
+    tol = tol
+  )
 }
 
 #' Multinomial probabilities of the column memberships
@@ -266,40 +276,55 @@ multinom_probs_Z_bernoulli <- function(
 #' @param stats_cols a list returned by [sufficient_stats_cols()]
 #' @param alpha a matrix (\eqn{K \times R}) of connectivity coefficients
 #' @param rho a vector of size R containing the column block proportions
+#' @param emission a string indicating the emission distribution for which to
+#'   compute the multinomial probabilities. Defaults to "poisson"
 #' @param tol Numeric; a small number used to clamp probabilities to
 #'   `[tol, 1-tol]`. Defaults to `TOL`.
 #'
 #' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
+#' @keywords internal
+multinom_probs_W <- function(
+  stats_cols,
+  alpha,
+  rho,
+  emission = "poisson",
+  tol = TOL
+) {
+  check_emission_distribution(emission)
+
+  prior_term <- matrix(1, nrow = nrow(stats_cols$R_Z)) %*% .log(rho)
+
+  loglik_term <- switch(
+    emission,
+    "poisson" = stats_cols$R_Z %*% .log(alpha) - stats_cols$N_Z %*% alpha,
+    "bernoulli" = stats_cols$R_Z %*%
+      .log(alpha) +
+      stats_cols$F_Z %*% .log(1 - alpha)
+  )
+
+  row_normalize_matrix(prior_term + loglik_term, tol = tol)
+}
+
+#' @rdname multinom_probs_W
 #' @keywords internal
 multinom_probs_W_poisson <- function(stats_cols, alpha, rho, tol = TOL) {
-  unormalized_log_probs <- matrix(1, nrow = nrow(stats_cols$R_Z)) %*%
-    .log(rho) +
-    stats_cols$R_Z %*% .log(alpha) -
-    stats_cols$N_Z %*% alpha
-
-  row_normalize_matrix(unormalized_log_probs, tol = tol)
+  multinom_probs_W(
+    stats_cols = stats_cols,
+    alpha = alpha,
+    rho = rho,
+    emission = "poisson",
+    tol = tol
+  )
 }
 
-
-#' Multinomial probabilities of the column memberships
-#'
-#' Computes the normalized conditional probabilities of each column-node block
-#' membership from the column sufficient statistics and the column block
-#' proportions.
-#'
-#' @param stats_cols a list returned by [sufficient_stats_cols()]
-#' @param alpha a matrix (\eqn{K \times R}) of connectivity coefficients
-#' @param rho a vector of size R containing the column block proportions
-#' @param tol Numeric; a small number used to clamp probabilities to
-#'   `[tol, 1-tol]`. Defaults to `TOL`.
-#'
-#' @return a matrix (\eqn{n_2 \times R}) of normalized membership probabilities
+#' @rdname multinom_probs_W
 #' @keywords internal
 multinom_probs_W_bernoulli <- function(stats_cols, alpha, rho, tol = TOL) {
-  unormalized_log_probs <- matrix(1, nrow = nrow(stats_cols$R_Z)) %*%
-    .log(rho) +
-    stats_cols$R_Z %*% .log(alpha) +
-    stats_cols$F_Z %*% .log(1 - alpha)
-
-  row_normalize_matrix(unormalized_log_probs, tol = tol)
+  multinom_probs_W(
+    stats_cols = stats_cols,
+    alpha = alpha,
+    rho = rho,
+    emission = "bernoulli",
+    tol = tol
+  )
 }

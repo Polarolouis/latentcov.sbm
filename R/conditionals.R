@@ -441,14 +441,49 @@ param_alpha_given_Y_Z_W_poisson <- function(
 #' Sample the connectivity matrix alpha
 #'
 #' Draws each entry of the connectivity matrix independently from its
-#' Gamma full-conditional distribution.
+#' full-conditional distribution, driven by the emission distribution:
+#' a Gamma for `poisson` and a Beta for `bernoulli`.
 #'
-#' @param shape a matrix (\eqn{K \times R}) containing the shape parameter from which to sample
-#' @param rate a matrix (\eqn{K \times R}) containing the rate parameter from which to sample
+#' @param alpha_params a list of posterior parameters as returned by
+#'   [alpha_params_from_stats_cols()]: `shape`/`rate` for `poisson`,
+#'   `shape1`/`shape2` for `bernoulli`
+#' @param emission a string indicating the emission distribution to sample
+#'   from. Defaults to "poisson"
 #'
 #' @return a matrix (\eqn{K \times R}) of sampled connectivity coefficients
+#' @keywords internal
+sample_alpha_given_Y_Z_W <- function(alpha_params, emission = "poisson") {
+  check_emission_distribution(emission)
+  switch(
+    emission,
+    "poisson" = {
+      shape <- alpha_params[["shape"]]
+      rate <- alpha_params[["rate"]]
+      matrix(
+        rgamma(length(shape), shape = shape, rate = rate),
+        nrow = nrow(shape)
+      )
+    },
+    "bernoulli" = {
+      shape1 <- alpha_params[["shape1"]]
+      shape2 <- alpha_params[["shape2"]]
+      matrix(
+        rbeta(length(shape1), shape1 = shape1, shape2 = shape2),
+        nrow = nrow(shape1)
+      )
+    }
+  )
+}
+
+#' @rdname sample_alpha_given_Y_Z_W
+#' @param shape a matrix (\eqn{K \times R}) containing the shape parameter from which to sample
+#' @param rate a matrix (\eqn{K \times R}) containing the rate parameter from which to sample
+#' @keywords internal
 sample_alpha_given_Y_Z_W_poisson <- function(shape, rate) {
-  matrix(rgamma(length(shape), shape = shape, rate = rate), nrow = nrow(shape))
+  sample_alpha_given_Y_Z_W(
+    alpha_params = list(shape = shape, rate = rate),
+    emission = "poisson"
+  )
 }
 
 #' Compute posterior parameters for the Gamma connectivity coefficients
@@ -484,18 +519,13 @@ param_alpha_given_Y_Z_W_bernoulli <- function(
   alpha_params_from_stats_cols_bernoulli(a0, b0, W = W, stats_cols = stats_cols)
 }
 
-#' Sample the connectivity matrix alpha
-#'
-#' Draws each entry of the connectivity matrix independently from its
-#' Beta full-conditional distribution.
-#'
+#' @rdname sample_alpha_given_Y_Z_W
 #' @param shape1 a matrix (\eqn{K \times R}) containing the shape1 parameter from which to sample
 #' @param shape2 a matrix (\eqn{K \times R}) containing the shape2 parameter from which to sample
-#'
-#' @return a matrix (\eqn{K \times R}) of sampled connectivity coefficients
+#' @keywords internal
 sample_alpha_given_Y_Z_W_bernoulli <- function(shape1, shape2) {
-  matrix(
-    rbeta(length(shape1), shape1 = shape1, shape2 = shape2),
-    nrow = nrow(shape1)
+  sample_alpha_given_Y_Z_W(
+    alpha_params = list(shape1 = shape1, shape2 = shape2),
+    emission = "bernoulli"
   )
 }
