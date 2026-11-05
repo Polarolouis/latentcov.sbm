@@ -122,6 +122,8 @@ alpha_params_from_stats_cols <- function(
   stats_cols,
   emission = "poisson"
 ) {
+  rlang::check_required(W)
+  rlang::check_required(stats_cols)
   check_emission_distribution(emission)
   args <- rlang::list2(...)
   # TODO Choose a priori parameters names that are more coherent with emission distribution
@@ -130,7 +132,7 @@ alpha_params_from_stats_cols <- function(
     "poisson" = {
       a0 <- args[["a0"]]
       b0 <- args[["b0"]]
-      list(
+      out <- list(
         shape = a0 + t(stats_cols$R_Z) %*% W,
         rate = b0 + t(stats_cols$N_Z) %*% W
       )
@@ -138,12 +140,13 @@ alpha_params_from_stats_cols <- function(
     "bernoulli" = {
       a0 <- args[["a0"]]
       b0 <- args[["b0"]]
-      list(
+      out <- list(
         shape1 = a0 + t(stats_cols$R_Z) %*% W,
         shape2 = b0 + t(stats_cols$F_Z) %*% W
       )
     }
   )
+  return(out)
 }
 
 #' Posterior Gamma parameters of the connectivity matrix `alpha`
@@ -160,9 +163,12 @@ alpha_params_from_stats_cols <- function(
 #' @return a list with `shape` and `rate` matrices (\eqn{K \times R})
 #' @keywords internal
 alpha_params_from_stats_cols_poisson <- function(a0, b0, W, stats_cols) {
-  list(
-    shape = a0 + t(stats_cols$R_Z) %*% W,
-    rate = b0 + t(stats_cols$N_Z) %*% W
+  alpha_params_from_stats_cols(
+    a0 = a0,
+    b0 = b0,
+    W = W,
+    stats_cols = stats_cols,
+    emission = "poisson"
   )
 }
 
@@ -179,9 +185,12 @@ alpha_params_from_stats_cols_poisson <- function(a0, b0, W, stats_cols) {
 #' @return a list with `shape1` and `shape2` matrices (\eqn{K \times R})
 #' @keywords internal
 alpha_params_from_stats_cols_bernoulli <- function(a0, b0, W, stats_cols) {
-  list(
-    shape1 = a0 + t(stats_cols$R_Z) %*% W,
-    shape2 = b0 + t(stats_cols$F_Z) %*% W
+  alpha_params_from_stats_cols(
+    a0 = a0,
+    b0 = b0,
+    W = W,
+    stats_cols = stats_cols,
+    emission = "bernoulli"
   )
 }
 

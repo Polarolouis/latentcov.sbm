@@ -435,7 +435,7 @@ param_alpha_given_Y_Z_W_poisson <- function(
   if (is.null(stats_cols)) {
     stats_cols <- sufficient_stats_cols(Y, mask, Z, emission = "poisson")
   }
-  alpha_params_from_stats_cols_poisson(a0, b0, W, stats_cols)
+  alpha_params_from_stats_cols_poisson(a0, b0, W = W, stats_cols = stats_cols)
 }
 
 #' Sample the connectivity matrix alpha
@@ -481,7 +481,7 @@ param_alpha_given_Y_Z_W_bernoulli <- function(
   if (is.null(stats_cols)) {
     stats_cols <- sufficient_stats_cols(Y, mask, Z, emission = "bernoulli")
   }
-  alpha_params_from_stats_cols_bernoulli(a0, b0, W, stats_cols)
+  alpha_params_from_stats_cols_bernoulli(a0, b0, W = W, stats_cols = stats_cols)
 }
 
 #' Sample the connectivity matrix alpha
