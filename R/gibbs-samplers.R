@@ -1,60 +1,24 @@
-## Classical LBM with Poisson
+## Classical LBM (Poisson / Bernoulli)
 
-#' Gibbs sampler for Poisson LBM
+#' Gibbs sampler for a classical LBM
 #'
-#' Runs a Gibbs sampler for a Poisson latent block model.
+#' Runs a Gibbs sampler for a classical (non-latent) latent block model,
+#' driven by the `emission` distribution: Poisson counts or Bernoulli
+#' interactions. Shared engine used by [gibbs_sampling_lbm_poisson()] and
+#' [gibbs_sampling_lbm_bernoulli()].
 #'
-#' @param Y Non-negative integer matrix of observed
-#' counts.
-#' @param init_Z Initial row-membership indicator
-#' matrix (`nrow(Y)` x `K`).
-#' @param init_W Initial column-membership indicator
-#' matrix (`ncol(Y)` x `R`).
-#' @param K Number of row groups.
-#' @param R Number of column groups.
-#' @param niter Number of Gibbs iterations.
-#' @param priors_hyper_params List of hyperparameters:
-#' `alpha_0`, `beta_0`,
-#'   `gammas_0`, `a0`, `b0`.
-#' @param tol Numeric; a small number indicating the
-#' tolerance at which one wants to clamp the values,
-#' i.e., if `value<tol` it gets set to tol and if
-#' `value>1-tol` it gets set to `1-tol`. Only used for
-#' probabilities.
-#' @param verbose Logical; if `TRUE` the iterations
-#' will print a message each 10 iterations
-#' @param prefix Optional character string; a prefix to
-#' append before logs. Will not print anything if
-#' `verbose=FALSE`. Defaults to '' (empty string)
-#' @param known_alpha NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix
-#' @param known_pi NULL (default) or a vector (\eqn{K})
-#' indicating the known row block proportions
-#' indicating the known columns block memberships
-#' @param known_Z NULL (default) or a matrix (\eqn{n_1\times K})
-#' indicating the known columns block memberships
-#' @param known_W NULL (default) or a matrix (\eqn{n_2\times R})
-#' indicating the known columns block memberships
-#' @param known_rho NULL (default) or a vectior (\eqn{R}) indicating the block
-#' a priori proportions
-#' @param force_order a boolean indicating if the order the groups
-#' \eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the
-#' decreasing marginals order(pi%*%alpha,decreasing=TRUE) and
-#' order(alpha %*% rho,decreasing=TRUE) to
-#' alleviate label-switching
-#' @param auto_save_path a path to auto save the chain to. Defaults to
-#' a temp file. If NULL is provided, disables auto-saving.
-#' @param save_every_each_iter an integer indicating the number of
-#' iter between auto-saves. Defaults to 100.
+#' @param emission a string indicating the emission distribution:
+#'   `"poisson"` or `"bernoulli"`. Defaults to `"poisson"`.
+#' @inheritParams gibbs_sampling_lbm_poisson
 #'
-#' @inheritParams sample_P_metropolis_classical rho
-#'
-#' @return A list with sampled trajectories:
-#'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
-#' @export
-gibbs_sampling_lbm_poisson <- function(
+#' @return A `draws_array` with sampled trajectories:
+#'   `W_array`, `Z_array`, `rho_array`, `pi_array`, `alpha_array`.
+#' @keywords internal
+gibbs_sampling_lbm_internal <- function(
   Y,
   K,
   R,
+  emission = "poisson",
   niter = 50L,
   priors_hyper_params = list(
     etas_0 = rep(2, K),
@@ -74,9 +38,11 @@ gibbs_sampling_lbm_poisson <- function(
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
   force_order = FALSE,
-  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds"),
+  auto_save_path = tempfile(pattern = "lbm_", fileext = ".Rds"),
   save_every_each_iter = 100L
 ) {
+  check_emission_distribution(emission)
+
   # Forcing future exports
   invisible(c(TOL))
 
@@ -176,20 +142,21 @@ gibbs_sampling_lbm_poisson <- function(
     pi_array[iter, ] <- current_pi
 
     ### alpha | Y, Z, W (column sufficient statistics)
-    stats_cols <- sufficient_stats_cols(Y, mask, Z)
+    stats_cols <- sufficient_stats_cols(Y, mask, Z, emission = emission)
     if (is.null(known_alpha)) {
-      alpha_params <- param_alpha_given_Y_Z_W_poisson(
+      alpha_params <- param_alpha_given_Y_Z_W(
         a0 = a0,
         b0 = b0,
         Y = Y,
         Z = Z,
         W = W,
         mask = mask,
+        emission = emission,
         stats_cols = stats_cols
       )
-      current_alpha <- sample_alpha_given_Y_Z_W_poisson(
-        shape = alpha_params[["shape"]],
-        rate = alpha_params[["rate"]]
+      current_alpha <- sample_alpha_given_Y_Z_W(
+        alpha_params = alpha_params,
+        emission = emission
       )
     } else {
       current_alpha <- known_alpha
@@ -199,12 +166,13 @@ gibbs_sampling_lbm_poisson <- function(
 
     ### W | Z,Y,rho,alpha
     if (is.null(known_W)) {
-      W_post_probs <- param_multinom_probs_W_poisson(
+      W_post_probs <- param_multinom_probs_W(
         Y,
         current_alpha,
         Z,
         rho = current_rho,
         mask = mask,
+        emission = emission,
         tol = tol,
         stats = stats_cols
       )
@@ -216,14 +184,15 @@ gibbs_sampling_lbm_poisson <- function(
     W_array[iter, ] <- current_W_memb
 
     ### Z | pi,W,Y,alpha (row sufficient statistics)
-    stats_rows <- sufficient_stats_rows(Y, mask, W)
+    stats_rows <- sufficient_stats_rows(Y, mask, W, emission = emission)
     if (is.null(known_Z)) {
-      Z_post_probs <- param_multinom_probs_Z_poisson(
+      Z_post_probs <- param_multinom_probs_Z(
         Y = Y,
         alpha = current_alpha,
         W = W,
-        pi = current_pi,
+        row_prior = current_pi,
         mask = mask,
+        emission = emission,
         tol = tol,
         stats = stats_rows
       )
@@ -252,34 +221,21 @@ gibbs_sampling_lbm_poisson <- function(
   return(out_array)
 }
 
-## Full LBM with latent phylo Poisson
-
-#' Gibbs sampler for latent phylogenetic Poisson LBM
+#' Gibbs sampler for Bernoulli LBM
 #'
-#' Runs a Gibbs sampler for a Poisson latent block model with latent row effects
-#' `P` structured by the covariance matrix `Sigma`.
+#' Runs a Gibbs sampler for a Bernoulli latent block model.
 #'
-#' @param Sigma Numeric covariance matrix for row
-#' latent effects.
-#' @param Y Non-negative integer matrix of observed
-#' counts.
+#' @param Y Binary (0 or 1) matrix of observed interactions.
+#' @param init_Z Initial row-membership indicator
+#' matrix (`nrow(Y)` x `K`).
+#' @param init_W Initial column-membership indicator
+#' matrix (`ncol(Y)` x `R`).
 #' @param K Number of row groups.
 #' @param R Number of column groups.
-#' @param init_Z Initial row-membership indicator
-#' matrix (`nrow(Y)` x `K`). Defaults to NULL.
-#' @param init_W Initial column-membership indicator
-#' matrix (`ncol(Y)` x `R`). Defaults to NULL.
 #' @param niter Number of Gibbs iterations.
-#' @param niter_metropolis Number of Metropolis updates
-#' per row for `P`.
 #' @param priors_hyper_params List of hyperparameters:
 #' `alpha_0`, `beta_0`,
 #'   `gammas_0`, `a0`, `b0`.
-#' @param sigma2_fixed Logical; if `TRUE`, keeps
-#' `sigma2 = 1`, otherwise samples
-#'   `sigma2` from its inverse-gamma full conditional.
-#' @param minibatch Logical; if `TRUE` the update order
-#' for P will change on each Gibbs iteration
 #' @param tol Numeric; a small number indicating the
 #' tolerance at which one wants to clamp the values,
 #' i.e., if `value<tol` it gets set to tol and if
@@ -290,23 +246,206 @@ gibbs_sampling_lbm_poisson <- function(
 #' @param prefix Optional character string; a prefix to
 #' append before logs. Will not print anything if
 #' `verbose=FALSE`. Defaults to '' (empty string)
-#' @param known_P NULL (default) or a matrix (\eqn{n_1\times K-1}) indicating the known latent correlated position used to compute probabilities of blocks
-#' @param P_sampler a function indicating the sampler to use for the P
-#' variable. Default to sample_P_metropolis_trick_cpp_fast
+#' @param known_alpha NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix
+#' @param known_pi NULL (default) or a vector (\eqn{K})
+#' indicating the known row block proportions
+#' indicating the known columns block memberships
+#' @param known_Z NULL (default) or a matrix (\eqn{n_1\times K})
+#' indicating the known columns block memberships
+#' @param known_W NULL (default) or a matrix (\eqn{n_2\times R})
+#' indicating the known columns block memberships
+#' @param known_rho NULL (default) or a vectior (\eqn{R}) indicating the block
+#' a priori proportions
+#' @param force_order a boolean indicating if the order the groups
+#' \eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the
+#' decreasing marginals order(pi%*%alpha,decreasing=TRUE) and
+#' order(alpha %*% rho,decreasing=TRUE) to
+#' alleviate label-switching
+#' @param auto_save_path a path to auto save the chain to. Defaults to
+#' a temp file. If NULL is provided, disables auto-saving.
+#' @param save_every_each_iter an integer indicating the number of
+#' iter between auto-saves. Defaults to 100.
 #'
-#' @inheritParams sample_P_metropolis_classical
-#' @inheritParams sample_P_metropolis_trick
-#' @inheritParams gibbs_sampling_lbm_poisson
-#'
+#' @inheritParams sample_P_metropolis_classical rho
 #'
 #' @return A list with sampled trajectories:
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
 #' @export
-gibbs_sampling_lbm_cov_poisson <- function(
+gibbs_sampling_lbm_bernoulli <- function(
+  Y,
+  K,
+  R,
+  niter = 50L,
+  priors_hyper_params = list(
+    etas_0 = rep(2, K),
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
+  rho = 1,
+  init_Z = NULL,
+  init_W = NULL,
+  known_alpha = NULL,
+  known_W = NULL,
+  known_Z = NULL,
+  known_pi = NULL,
+  known_rho = NULL,
+  tol = TOL,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
+  prefix = "",
+  force_order = FALSE,
+  auto_save_path = tempfile(pattern = "lbm_bernoulli_", fileext = ".Rds"),
+  save_every_each_iter = 100L
+) {
+  gibbs_sampling_lbm_internal(
+    Y = Y,
+    K = K,
+    R = R,
+    emission = "bernoulli",
+    niter = niter,
+    priors_hyper_params = priors_hyper_params,
+    rho = rho,
+    init_Z = init_Z,
+    init_W = init_W,
+    known_alpha = known_alpha,
+    known_W = known_W,
+    known_Z = known_Z,
+    known_pi = known_pi,
+    known_rho = known_rho,
+    tol = tol,
+    verbose = verbose,
+    prefix = prefix,
+    force_order = force_order,
+    auto_save_path = auto_save_path,
+    save_every_each_iter = save_every_each_iter
+  )
+}
+
+#' Gibbs sampler for Poisson LBM
+#'
+#' Runs a Gibbs sampler for a Poisson latent block model.
+#'
+#' @param Y Non-negative integer matrix of observed
+#' counts.
+#' @param init_Z Initial row-membership indicator
+#' matrix (`nrow(Y)` x `K`).
+#' @param init_W Initial column-membership indicator
+#' matrix (`ncol(Y)` x `R`).
+#' @param K Number of row groups.
+#' @param R Number of column groups.
+#' @param niter Number of Gibbs iterations.
+#' @param priors_hyper_params List of hyperparameters:
+#' `alpha_0`, `beta_0`,
+#'   `gammas_0`, `a0`, `b0`.
+#' @param tol Numeric; a small number indicating the
+#' tolerance at which one wants to clamp the values,
+#' i.e., if `value<tol` it gets set to tol and if
+#' `value>1-tol` it gets set to `1-tol`. Only used for
+#' probabilities.
+#' @param verbose Logical; if `TRUE` the iterations
+#' will print a message each 10 iterations
+#' @param prefix Optional character string; a prefix to
+#' append before logs. Will not print anything if
+#' `verbose=FALSE`. Defaults to '' (empty string)
+#' @param known_alpha NULL (default) or a matrix (\eqn{K\times R}) indicating the known \eqn{\alpha} connectivity matrix
+#' @param known_pi NULL (default) or a vector (\eqn{K})
+#' indicating the known row block proportions
+#' indicating the known columns block memberships
+#' @param known_Z NULL (default) or a matrix (\eqn{n_1\times K})
+#' indicating the known columns block memberships
+#' @param known_W NULL (default) or a matrix (\eqn{n_2\times R})
+#' indicating the known columns block memberships
+#' @param known_rho NULL (default) or a vectior (\eqn{R}) indicating the block
+#' a priori proportions
+#' @param force_order a boolean indicating if the order the groups
+#' \eqn{\{1,\dots,K\}} and \eqn{\{1,\dots,R\}} should be the
+#' decreasing marginals order(pi%*%alpha,decreasing=TRUE) and
+#' order(alpha %*% rho,decreasing=TRUE) to
+#' alleviate label-switching
+#' @param auto_save_path a path to auto save the chain to. Defaults to
+#' a temp file. If NULL is provided, disables auto-saving.
+#' @param save_every_each_iter an integer indicating the number of
+#' iter between auto-saves. Defaults to 100.
+#'
+#' @inheritParams sample_P_metropolis_classical rho
+#'
+#' @return A list with sampled trajectories:
+#'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
+#' @export
+gibbs_sampling_lbm_poisson <- function(
+  Y,
+  K,
+  R,
+  niter = 50L,
+  priors_hyper_params = list(
+    etas_0 = rep(2, K),
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
+  rho = 1,
+  init_Z = NULL,
+  init_W = NULL,
+  known_alpha = NULL,
+  known_W = NULL,
+  known_Z = NULL,
+  known_pi = NULL,
+  known_rho = NULL,
+  tol = TOL,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
+  prefix = "",
+  force_order = FALSE,
+  auto_save_path = tempfile(pattern = "lbm_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
+) {
+  gibbs_sampling_lbm_internal(
+    Y = Y,
+    K = K,
+    R = R,
+    emission = "poisson",
+    niter = niter,
+    priors_hyper_params = priors_hyper_params,
+    rho = rho,
+    init_Z = init_Z,
+    init_W = init_W,
+    known_alpha = known_alpha,
+    known_W = known_W,
+    known_Z = known_Z,
+    known_pi = known_pi,
+    known_rho = known_rho,
+    tol = tol,
+    verbose = verbose,
+    prefix = prefix,
+    force_order = force_order,
+    auto_save_path = auto_save_path,
+    save_every_each_iter = save_every_each_iter
+  )
+}
+
+
+## Full LBM with latent phylo Poisson / Bernoulli
+
+#' Gibbs sampler for latent covariance LBM
+#'
+#' Runs a Gibbs sampler for a latent block model with latent row effects
+#' `P` structured by the covariance matrix `Sigma`, driven by the
+#' `emission` distribution: Poisson counts or Bernoulli interactions.
+#' Shared engine used by [gibbs_sampling_lbm_cov_poisson()] and
+#' [gibbs_sampling_lbm_cov_bernoulli()].
+#'
+#' @param emission a string indicating the emission distribution:
+#'   `"poisson"` or `"bernoulli"`. Defaults to `"poisson"`.
+#' @inheritParams gibbs_sampling_lbm_cov_poisson
+#'
+#' @return A list with sampled trajectories:
+#'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
+#' @keywords internal
+gibbs_sampling_lbm_cov_internal <- function(
   Sigma,
   Y,
   K,
   R,
+  emission = "poisson",
   init_Z = NULL,
   init_W = NULL,
   niter = 50L,
@@ -330,9 +469,11 @@ gibbs_sampling_lbm_cov_poisson <- function(
   tol = TOL,
   verbose = getOption("latentcov.sbm.verbose", default = FALSE),
   prefix = "",
-  auto_save_path = tempfile(pattern = "lbmcov_poisson_", fileext = ".Rds"),
+  auto_save_path = tempfile(pattern = "lbmcov_", fileext = ".Rds"),
   save_every_each_iter = 100L
 ) {
+  check_emission_distribution(emission)
+
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
 
@@ -429,20 +570,21 @@ gibbs_sampling_lbm_cov_poisson <- function(
     rho_array[iter, ] <- current_rho
 
     ### alpha | Y, Z, W (column sufficient statistics)
-    stats_cols <- sufficient_stats_cols(Y, mask, Z)
+    stats_cols <- sufficient_stats_cols(Y, mask, Z, emission = emission)
     if (is.null(known_alpha)) {
-      alpha_params <- param_alpha_given_Y_Z_W_poisson(
+      alpha_params <- param_alpha_given_Y_Z_W(
         a0 = a0,
         b0 = b0,
         Y = Y,
         Z = Z,
         W = W,
         mask = mask,
+        emission = emission,
         stats_cols = stats_cols
       )
-      current_alpha <- sample_alpha_given_Y_Z_W_poisson(
-        shape = alpha_params[["shape"]],
-        rate = alpha_params[["rate"]]
+      current_alpha <- sample_alpha_given_Y_Z_W(
+        alpha_params = alpha_params,
+        emission = emission
       )
     } else {
       current_alpha <- known_alpha
@@ -502,12 +644,13 @@ gibbs_sampling_lbm_cov_poisson <- function(
 
     ### W | Z,Y,rho,alpha
     if (is.null(known_W)) {
-      W_post_probs <- param_multinom_probs_W_poisson(
+      W_post_probs <- param_multinom_probs_W(
         Y,
         current_alpha,
         Z,
         rho = current_rho,
         mask = mask,
+        emission = emission,
         tol = tol,
         stats = stats_cols
       )
@@ -519,14 +662,15 @@ gibbs_sampling_lbm_cov_poisson <- function(
     W_array[iter, ] <- current_W_memb
 
     ### Z | P,W,Y,alpha (row sufficient statistics)
-    stats_rows <- sufficient_stats_rows(Y, mask, W)
+    stats_rows <- sufficient_stats_rows(Y, mask, W, emission = emission)
     if (is.null(known_Z)) {
-      Z_post_probs <- param_multinom_probs_Z_cov_poisson(
+      Z_post_probs <- param_multinom_probs_Z(
         Y = Y,
         alpha = current_alpha,
         W = W,
-        P = current_P,
+        row_prior = ilrInv(current_P),
         mask = mask,
+        emission = emission,
         tol = tol,
         stats = stats_rows
       )
@@ -556,17 +700,194 @@ gibbs_sampling_lbm_cov_poisson <- function(
   return(out_array)
 }
 
-## Mixed-membership LBM with latent phylo Poisson
+#' Gibbs sampler for latent covariance Bernoulli LBM
+#'
+#' Runs a Gibbs sampler for a Bernoulli latent block model with latent row
+#' effects `P` structured by the covariance matrix `Sigma`.
+#'
+#' @inheritParams gibbs_sampling_lbm_cov_poisson
+#'
+#' @return A list with sampled trajectories:
+#'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
+#' @export
+gibbs_sampling_lbm_cov_bernoulli <- function(
+  Sigma,
+  Y,
+  K,
+  R,
+  init_Z = NULL,
+  init_W = NULL,
+  niter = 50L,
+  niter_metropolis = 1L,
+  priors_hyper_params = list(
+    alpha_0 = 1,
+    beta_0 = 1,
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
+  rho = 1,
+  sigma2_fixed = TRUE,
+  known_alpha = NULL,
+  known_P = NULL,
+  known_W = NULL,
+  known_Z = NULL,
+  known_rho = NULL,
+  P_sampler = sample_P_metropolis_trick_cpp_fast,
+  minibatch = TRUE,
+  tol = TOL,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
+  prefix = "",
+  auto_save_path = tempfile(pattern = "lbmcov_bernoulli_", fileext = ".Rds"),
+  save_every_each_iter = 100L
+) {
+  gibbs_sampling_lbm_cov_internal(
+    Sigma = Sigma,
+    Y = Y,
+    K = K,
+    R = R,
+    emission = "bernoulli",
+    init_Z = init_Z,
+    init_W = init_W,
+    niter = niter,
+    niter_metropolis = niter_metropolis,
+    priors_hyper_params = priors_hyper_params,
+    rho = rho,
+    sigma2_fixed = sigma2_fixed,
+    known_alpha = known_alpha,
+    known_P = known_P,
+    known_W = known_W,
+    known_Z = known_Z,
+    known_rho = known_rho,
+    P_sampler = P_sampler,
+    minibatch = minibatch,
+    tol = tol,
+    verbose = verbose,
+    prefix = prefix,
+    auto_save_path = auto_save_path,
+    save_every_each_iter = save_every_each_iter
+  )
+}
+
+#' Gibbs sampler for latent covariance Poisson LBM
+#'
+#' Runs a Gibbs sampler for a Poisson latent block model with latent row effects
+#' `P` structured by the covariance matrix `Sigma`.
+#'
+#' @param Sigma Numeric covariance matrix for row
+#' latent effects.
+#' @param Y Non-negative integer matrix of observed
+#' counts.
+#' @param K Number of row groups.
+#' @param R Number of column groups.
+#' @param init_Z Initial row-membership indicator
+#' matrix (`nrow(Y)` x `K`). Defaults to NULL.
+#' @param init_W Initial column-membership indicator
+#' matrix (`ncol(Y)` x `R`). Defaults to NULL.
+#' @param niter Number of Gibbs iterations.
+#' @param niter_metropolis Number of Metropolis updates
+#' per row for `P`.
+#' @param priors_hyper_params List of hyperparameters:
+#' `alpha_0`, `beta_0`,
+#'   `gammas_0`, `a0`, `b0`.
+#' @param sigma2_fixed Logical; if `TRUE`, keeps
+#' `sigma2 = 1`, otherwise samples
+#'   `sigma2` from its inverse-gamma full conditional.
+#' @param minibatch Logical; if `TRUE` the update order
+#' for P will change on each Gibbs iteration
+#' @param tol Numeric; a small number indicating the
+#' tolerance at which one wants to clamp the values,
+#' i.e., if `value<tol` it gets set to tol and if
+#' `value>1-tol` it gets set to `1-tol`. Only used for
+#' probabilities.
+#' @param verbose Logical; if `TRUE` the iterations
+#' will print a message each 10 iterations
+#' @param prefix Optional character string; a prefix to
+#' append before logs. Will not print anything if
+#' `verbose=FALSE`. Defaults to '' (empty string)
+#' @param known_P NULL (default) or a matrix (\eqn{n_1\times K-1}) indicating the known latent correlated position used to compute probabilities of blocks
+#' @param P_sampler a function indicating the sampler to use for the P
+#' variable. Default to sample_P_metropolis_trick_cpp_fast
+#'
+#' @inheritParams sample_P_metropolis_classical
+#' @inheritParams sample_P_metropolis_trick
+#' @inheritParams gibbs_sampling_lbm_poisson
+#'
+#'
+#' @return A list with sampled trajectories:
+#'   `sigma2_array`, `P_array`, `W_array`, `Z_array`, `rho_array`, `alpha_array`.
+#' @export
+gibbs_sampling_lbm_cov_poisson <- function(
+  Sigma,
+  Y,
+  K,
+  R,
+  init_Z = NULL,
+  init_W = NULL,
+  niter = 50L,
+  niter_metropolis = 1L,
+  priors_hyper_params = list(
+    alpha_0 = 1,
+    beta_0 = 1,
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
+  rho = 1,
+  sigma2_fixed = TRUE,
+  known_alpha = NULL,
+  known_P = NULL,
+  known_W = NULL,
+  known_Z = NULL,
+  known_rho = NULL,
+  P_sampler = sample_P_metropolis_trick_cpp_fast,
+  minibatch = TRUE,
+  tol = TOL,
+  verbose = getOption("latentcov.sbm.verbose", default = FALSE),
+  prefix = "",
+  auto_save_path = tempfile(pattern = "lbmcov_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
+) {
+  gibbs_sampling_lbm_cov_internal(
+    Sigma = Sigma,
+    Y = Y,
+    K = K,
+    R = R,
+    emission = "poisson",
+    init_Z = init_Z,
+    init_W = init_W,
+    niter = niter,
+    niter_metropolis = niter_metropolis,
+    priors_hyper_params = priors_hyper_params,
+    rho = rho,
+    sigma2_fixed = sigma2_fixed,
+    known_alpha = known_alpha,
+    known_P = known_P,
+    known_W = known_W,
+    known_Z = known_Z,
+    known_rho = known_rho,
+    P_sampler = P_sampler,
+    minibatch = minibatch,
+    tol = tol,
+    verbose = verbose,
+    prefix = prefix,
+    auto_save_path = auto_save_path,
+    save_every_each_iter = save_every_each_iter
+  )
+}
+
+
+## Mixed-membership LBM with latent phylo Poisson / Bernoulli
 ##
 ## Soft (mixed-membership) version of
-## [gibbs_sampling_lbm_cov_poisson()] in which the hard row-membership
+## [gibbs_sampling_lbm_cov_internal()] in which the hard row-membership
 ## indicator `Z` is removed entirely and replaced everywhere by the soft
 ## membership probabilities `Z_post_probs` (an `n_1 x K` matrix whose rows
 ## sum to 1). The column memberships `W` remain hard.
 
-#' Gibbs sampler for mixed-membership latent phylogenetic Poisson LBM
+#' Gibbs sampler for mixed-membership latent phylogenetic LBM
 #'
-#' Soft (mixed-membership) analogue of [gibbs_sampling_lbm_cov_poisson()].
+#' Soft (mixed-membership) analogue of [gibbs_sampling_lbm_cov_internal()].
 #' The hard row-membership indicator `Z` is removed and every step involving
 #' `Z` is rewritten in terms of the soft membership probabilities
 #' `Z_post_probs`:
@@ -581,22 +902,21 @@ gibbs_sampling_lbm_cov_poisson <- function(
 #' * `Z | P, W, Y, alpha` computes `Z_post_probs` and keeps it (no collapsed
 #'   draw is produced).
 #'
-#' @inheritParams gibbs_sampling_lbm_cov_poisson
-#' @param init_Z NULL (default) or an (\eqn{n_1 \times K}) matrix of initial
-#'   **soft** memberships (rows sum to 1). If NULL the memberships are
-#'   initialized from `ilrInv(current_P)`.
-#' @param auto_save_path the path to which results will be autosaved
+#' @param emission a string indicating the emission distribution:
+#'   `"poisson"` or `"bernoulli"`. Defaults to `"poisson"`.
+#' @inheritParams gibbs_sampling_lbm_cov_poisson_mixed_membership
 #'
 #' @return A list with sampled trajectories:
 #'   `sigma2_array`, `P_array`, `W_array`, `Z_post_probs_array`, `rho_array`, `alpha_array`.
-#' @export
-gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
+#' @keywords internal
+gibbs_sampling_lbm_cov_mixed_membership_internal <- function(
   Sigma,
   Y,
   init_Z,
   init_W,
   K,
   R,
+  emission = "poisson",
   niter = 50L,
   niter_metropolis = 1L,
   priors_hyper_params = list(
@@ -617,9 +937,11 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   tol = TOL,
   verbose = FALSE,
   prefix = "",
-  auto_save_path = tempfile(pattern = "lbmcovsoft_poisson_", fileext = ".Rds"),
+  auto_save_path = tempfile(pattern = "lbmcovsoft_", fileext = ".Rds"),
   save_every_each_iter = 100L
 ) {
+  check_emission_distribution(emission)
+
   # Forcing future exports
   invisible(c(ilrInv, cat_dist_ilr_given_Pi, sample_Pi_given, TOL))
   if (verbose && !is.null(auto_save_path)) {
@@ -705,20 +1027,26 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
     rho_array[iter, ] <- current_rho
 
     ### alpha | Y, Z_post_probs, W (soft sufficient statistics)
-    stats_cols <- sufficient_stats_cols(Y, mask, Z_post_probs)
+    stats_cols <- sufficient_stats_cols(
+      Y,
+      mask,
+      Z_post_probs,
+      emission = emission
+    )
     if (is.null(known_alpha)) {
-      alpha_params <- param_alpha_given_Y_Z_W_poisson(
+      alpha_params <- param_alpha_given_Y_Z_W(
         a0 = a0,
         b0 = b0,
         Y = Y,
         Z = Z_post_probs,
         W = W,
         mask = mask,
+        emission = emission,
         stats_cols = stats_cols
       )
-      current_alpha <- sample_alpha_given_Y_Z_W_poisson(
-        shape = alpha_params[["shape"]],
-        rate = alpha_params[["rate"]]
+      current_alpha <- sample_alpha_given_Y_Z_W(
+        alpha_params = alpha_params,
+        emission = emission
       )
     } else {
       current_alpha <- known_alpha
@@ -777,12 +1105,13 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
 
     ### W | Z_post_probs, Y, rho, alpha (soft sufficient statistics)
     if (is.null(known_W)) {
-      W_post_probs <- param_multinom_probs_W_poisson(
+      W_post_probs <- param_multinom_probs_W(
         Y,
         current_alpha,
         Z = Z_post_probs,
         rho = current_rho,
         mask = mask,
+        emission = emission,
         tol = tol,
         stats = stats_cols
       )
@@ -794,13 +1123,14 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
     W_array[iter, ] <- current_W_memb
 
     ### Z_post_probs | P, W, Y, alpha (kept soft, no hard draw)
-    stats_rows <- sufficient_stats_rows(Y, mask, W)
-    Z_post_probs <- param_multinom_probs_Z_cov_poisson(
+    stats_rows <- sufficient_stats_rows(Y, mask, W, emission = emission)
+    Z_post_probs <- param_multinom_probs_Z(
       Y = Y,
       alpha = current_alpha,
       W = W,
+      row_prior = ilrInv(current_P),
       mask = mask,
-      P = current_P,
+      emission = emission,
       tol = tol,
       stats = stats_rows
     )
@@ -823,6 +1153,161 @@ gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
   }
 
   return(out_array)
+}
+
+#' Gibbs sampler for mixed-membership latent phylogenetic Bernoulli LBM
+#'
+#' Soft (mixed-membership) Bernoulli analogue of
+#' [gibbs_sampling_lbm_cov_bernoulli()]. See
+#' [gibbs_sampling_lbm_cov_poisson_mixed_membership()] for the description of
+#' the soft (mixed-membership) update scheme.
+#'
+#' @inheritParams gibbs_sampling_lbm_cov_poisson_mixed_membership
+#'
+#' @return A list with sampled trajectories:
+#'   `sigma2_array`, `P_array`, `W_array`, `Z_post_probs_array`, `rho_array`, `alpha_array`.
+#' @export
+gibbs_sampling_lbm_cov_bernoulli_mixed_membership <- function(
+  Sigma,
+  Y,
+  init_Z,
+  init_W,
+  K,
+  R,
+  niter = 50L,
+  niter_metropolis = 1L,
+  priors_hyper_params = list(
+    alpha_0 = 1,
+    beta_0 = 1,
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
+  rho = 1,
+  sigma2_fixed = TRUE,
+  known_alpha = NULL,
+  known_P = NULL,
+  known_W = NULL,
+  known_rho = NULL,
+  P_sampler = sample_P_metropolis_trick_soft_cpp_fast,
+  minibatch = TRUE,
+  tol = TOL,
+  verbose = FALSE,
+  prefix = "",
+  auto_save_path = tempfile(
+    pattern = "lbmcovsoft_bernoulli_",
+    fileext = ".Rds"
+  ),
+  save_every_each_iter = 100L
+) {
+  gibbs_sampling_lbm_cov_mixed_membership_internal(
+    Sigma = Sigma,
+    Y = Y,
+    init_Z = init_Z,
+    init_W = init_W,
+    K = K,
+    R = R,
+    emission = "bernoulli",
+    niter = niter,
+    niter_metropolis = niter_metropolis,
+    priors_hyper_params = priors_hyper_params,
+    rho = rho,
+    sigma2_fixed = sigma2_fixed,
+    known_alpha = known_alpha,
+    known_P = known_P,
+    known_W = known_W,
+    known_rho = known_rho,
+    P_sampler = P_sampler,
+    minibatch = minibatch,
+    tol = tol,
+    verbose = verbose,
+    prefix = prefix,
+    auto_save_path = auto_save_path,
+    save_every_each_iter = save_every_each_iter
+  )
+}
+
+#' Gibbs sampler for mixed-membership latent phylogenetic Poisson LBM
+#'
+#' Soft (mixed-membership) analogue of [gibbs_sampling_lbm_cov_poisson()].
+#' The hard row-membership indicator `Z` is removed and every step involving
+#' `Z` is rewritten in terms of the soft membership probabilities
+#' `Z_post_probs`:
+#'
+#' * `alpha | Y, Z, W` replaces the hard counts `t(Z) %*% Y %*% W` and
+#'   `t(Z) %*% 1 %*% W` by their fractional (soft) counterparts computed with
+#'   `Z_post_probs`;
+#' * `W | Z, Y, rho, alpha` uses `Z_post_probs` in the soft sufficient
+#'   statistics `t(Y) %*% Z_post_probs` and `colSums(Z_post_probs)`;
+#' * `P | sigma2, Z` uses a soft membership likelihood
+#'   ([sample_P_metropolis_trick_soft()]) instead of the hard `which.max(Z)`;
+#' * `Z | P, W, Y, alpha` computes `Z_post_probs` and keeps it (no collapsed
+#'   draw is produced).
+#'
+#' @inheritParams gibbs_sampling_lbm_cov_poisson
+#' @param init_Z NULL (default) or an (\eqn{n_1 \times K}) matrix of initial
+#'   **soft** memberships (rows sum to 1). If NULL the memberships are
+#'   initialized from `ilrInv(current_P)`.
+#' @param auto_save_path the path to which results will be autosaved
+#'
+#' @return A list with sampled trajectories:
+#'   `sigma2_array`, `P_array`, `W_array`, `Z_post_probs_array`, `rho_array`, `alpha_array`.
+#' @export
+gibbs_sampling_lbm_cov_poisson_mixed_membership <- function(
+  Sigma,
+  Y,
+  init_Z,
+  init_W,
+  K,
+  R,
+  niter = 50L,
+  niter_metropolis = 1L,
+  priors_hyper_params = list(
+    alpha_0 = 1,
+    beta_0 = 1,
+    gammas_0 = rep(2, R),
+    a0 = 1,
+    b0 = 1
+  ),
+  rho = 1,
+  sigma2_fixed = TRUE,
+  known_alpha = NULL,
+  known_P = NULL,
+  known_W = NULL,
+  known_rho = NULL,
+  P_sampler = sample_P_metropolis_trick_soft_cpp_fast,
+  minibatch = TRUE,
+  tol = TOL,
+  verbose = FALSE,
+  prefix = "",
+  auto_save_path = tempfile(pattern = "lbmcovsoft_poisson_", fileext = ".Rds"),
+  save_every_each_iter = 100L
+) {
+  gibbs_sampling_lbm_cov_mixed_membership_internal(
+    Sigma = Sigma,
+    Y = Y,
+    init_Z = init_Z,
+    init_W = init_W,
+    K = K,
+    R = R,
+    emission = "poisson",
+    niter = niter,
+    niter_metropolis = niter_metropolis,
+    priors_hyper_params = priors_hyper_params,
+    rho = rho,
+    sigma2_fixed = sigma2_fixed,
+    known_alpha = known_alpha,
+    known_P = known_P,
+    known_W = known_W,
+    known_rho = known_rho,
+    P_sampler = P_sampler,
+    minibatch = minibatch,
+    tol = tol,
+    verbose = verbose,
+    prefix = prefix,
+    auto_save_path = auto_save_path,
+    save_every_each_iter = save_every_each_iter
+  )
 }
 
 #' Run nchains of LBM Poisson Gibbs Sampler
