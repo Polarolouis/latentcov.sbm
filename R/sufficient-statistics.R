@@ -34,7 +34,7 @@ sufficient_stats_rows <- function(Y, mask, W, emission = "poisson") {
       )
     },
     "bernoulli" = {
-      out <- list(R_W = Y_obs %*% W, F_W = (1 - Y_obs) %*% W)
+      out <- list(R_W = Y_obs %*% W, F_W = (mask - Y_obs) %*% W)
     }
   )
   return(out)
@@ -71,7 +71,7 @@ sufficient_stats_cols <- function(Y, mask, Z, emission = "poisson") {
     "bernoulli" = {
       out <- list(
         R_Z = t(Y_obs) %*% Z,
-        F_Z = (1 - t(Y_obs)) %*% Z
+        F_Z = t((mask - Y_obs)) %*% Z
       )
     }
   )
@@ -105,13 +105,12 @@ sufficient_stats <- function(Y, mask, Z, W, emission = "poisson") {
 #'
 #' @details On the different emission distributions:
 #' \itemize{
-#'   \item{`bernoulli:`}{takes `a0` and `b0` as priors for the Beta distribution
+#'   \item `"bernoulli":` takes `a0` and `b0` as priors for the Beta distribution
 #' and outputs `shape1` and `shape2` the parameters for the
-#' a posteriori Beta distribution.}
-#'   \item{`poisson:`}{takes `a0` and `b0` as priors for the Gamma distribution
+#' a posteriori Beta distribution.
+#'   \item `"poisson":` takes `a0` and `b0` as priors for the Gamma distribution
 #' and outputs `shape` and `rate` the parameters for the
 #' a posteriori Gamma distribution.}
-#' }
 #'
 #' @return a list containing the updated parameters for the `emission`
 #' distribution provided. See details for the exact names
@@ -133,16 +132,16 @@ alpha_params_from_stats_cols <- function(
       a0 <- args[["a0"]]
       b0 <- args[["b0"]]
       out <- list(
-        shape = a0 + t(stats_cols$R_Z) %*% W,
-        rate = b0 + t(stats_cols$N_Z) %*% W
+        shape = a0 + t(stats_cols[["R_Z"]]) %*% W,
+        rate = b0 + t(stats_cols[["N_Z"]]) %*% W
       )
     },
     "bernoulli" = {
       a0 <- args[["a0"]]
       b0 <- args[["b0"]]
       out <- list(
-        shape1 = a0 + t(stats_cols$R_Z) %*% W,
-        shape2 = b0 + t(stats_cols$F_Z) %*% W
+        shape1 = a0 + t(stats_cols[["R_Z"]]) %*% W,
+        shape2 = b0 + t(stats_cols[["F_Z"]]) %*% W
       )
     }
   )
