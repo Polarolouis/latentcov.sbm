@@ -626,11 +626,148 @@ for (emission in emission_distributions) {
     }
   )
 
+  test_that(
+    glue::glue(
+      "Mixed-memberships Latent Cov with {emission} emission: P sampler can be changed"
+    ),
+    {
+      set.seed(24)
+      out <- mixed_memberships_latentcov_gibbs_sampler(
+        Sigma = Sigma_fx,
+        Y = .ny_na,
+        K = 3,
+        R = 2,
+        niter = 5,
+        init_Z = zsoft,
+        init_W = .w_init,
+        P_sampler = sample_P_metropolis_trick_soft
+      )
+      expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
+    }
+  )
+
+  test_that(
+    glue::glue(
+      "Mixed-memberships Latent Cov with {emission} emission: cov Gibbs handles NAs and reports verbose iterations"
+    ),
+    {
+      set.seed(24)
+      out <- mixed_memberships_latentcov_gibbs_sampler(
+        Sigma = Sigma_fx,
+        Y = .ny_na,
+        K = 3,
+        R = 2,
+        niter = 5,
+        init_Z = zsoft,
+        init_W = .w_init
+      )
+      expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
+      expect_message(
+        mixed_memberships_latentcov_gibbs_sampler(
+          Sigma = Sigma_fx,
+          Y = .ny,
+          K = 3,
+          R = 2,
+          niter = 10,
+          init_Z = zsoft,
+          init_W = .w_init,
+          verbose = TRUE
+        ),
+        "Iter : 10"
+      )
+    }
+  )
+
+  test_that(
+    glue::glue(
+      "Mixed-memberships Latent Cov with {emission} emission: cov Gibbs handles NAs and reports verbose iterations with a trick sampler"
+    ),
+    {
+      set.seed(24)
+      out <- mixed_memberships_latentcov_gibbs_sampler(
+        Sigma = Sigma_fx,
+        Y = .ny_na,
+        K = 3,
+        R = 2,
+        niter = 5,
+        init_Z = zsoft,
+        init_W = .w_init,
+        P_sampler = sample_P_metropolis_trick_soft_cpp_fast
+      )
+      expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
+      expect_message(
+        mixed_memberships_latentcov_gibbs_sampler(
+          Sigma = Sigma_fx,
+          Y = .ny,
+          K = 3,
+          R = 2,
+          niter = 10,
+          init_Z = zsoft,
+          init_W = .w_init,
+          verbose = TRUE,
+          P_sampler = sample_P_metropolis_trick_soft_cpp_fast
+        ),
+        "Iter : 10"
+      )
+    }
+  )
+
+  test_that("Mixed-memberships Latent Cov with {emission} emission: draws proportions when init_Z and init_W are NULL", {
+    set.seed(45)
+    out <- mixed_memberships_latentcov_gibbs_sampler(
+      Sigma = Sigma_fx,
+      Y = .ny,
+      init_Z = NULL,
+      init_W = NULL,
+      K = 3,
+      R = 2,
+      niter = 5,
+      known_alpha = alpha_fx
+    )
+    expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
+  })
+
+  test_that("Mixed-memberships Latent Cov with {emission} emission: accepts a numeric sigma2_fixed and logs it", {
+    set.seed(46)
+    zsoft <- ilrInv(P_fx)
+    expect_message(
+      out <- mixed_memberships_latentcov_gibbs_sampler(
+        Sigma = Sigma_fx,
+        Y = .ny,
+        init_Z = zsoft,
+        init_W = .w_init,
+        K = 3,
+        R = 2,
+        niter = 5,
+        known_alpha = alpha_fx,
+        known_P = P_fx,
+        sigma2_fixed = 0.5
+      ),
+      "Using sigma2=0.5"
+    )
+    df <- as.data.frame(posterior::as_draws_df(out))
+    expect_equal(as.vector(df[["sigma2"]]), rep(0.5, 5))
+  })
+
+  test_that("Mixed-memberships Latent Cov with {emission} emission: samples P when known_P is NULL", {
+    set.seed(47)
+    out <- mixed_memberships_latentcov_gibbs_sampler(
+      Sigma = Sigma_fx,
+      Y = .ny,
+      init_Z = zsoft,
+      init_W = .w_init,
+      K = 3,
+      R = 2,
+      niter = 5,
+      known_alpha = alpha_fx
+    )
+    expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
+  })
   # ---- coverage: initial proportion draws, force_order, auto_save, chains ----
 
   test_that("classical Gibbs initializes NULL proportions sorted by force_order", {
     set.seed(40)
-    out <- gibbs_sampling_lbm_poisson(
+    out <- gibbs_sampler(
       .ny,
       K = 3,
       R = 2,
@@ -652,7 +789,7 @@ for (emission in emission_distributions) {
   test_that("classical Gibbs auto-saves when an iteration lands on a multiple of 100", {
     set.seed(41)
     path <- tempfile(fileext = ".Rds")
-    out <- gibbs_sampling_lbm_poisson(
+    out <- gibbs_sampler(
       .ny,
       K = 3,
       R = 2,
@@ -714,59 +851,6 @@ for (emission in emission_distributions) {
       ),
       "state of the chain"
     )
-  })
-
-  test_that("mixed-membership Gibbs draws proportions when init_Z and init_W are NULL", {
-    set.seed(45)
-    out <- mixed_memberships_latentcov_gibbs_sampler(
-      Sigma = Sigma_fx,
-      Y = .ny,
-      init_Z = NULL,
-      init_W = NULL,
-      K = 3,
-      R = 2,
-      niter = 5,
-      known_alpha = alpha_fx
-    )
-    expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
-  })
-
-  test_that("mixed-membership Gibbs accepts a numeric sigma2_fixed and logs it", {
-    set.seed(46)
-    zsoft <- ilrInv(P_fx)
-    expect_message(
-      out <- mixed_memberships_latentcov_gibbs_sampler(
-        Sigma = Sigma_fx,
-        Y = .ny,
-        init_Z = zsoft,
-        init_W = .w_init,
-        K = 3,
-        R = 2,
-        niter = 5,
-        known_alpha = alpha_fx,
-        known_P = P_fx,
-        sigma2_fixed = 0.5
-      ),
-      "Using sigma2=0.5"
-    )
-    df <- as.data.frame(posterior::as_draws_df(out))
-    expect_equal(as.vector(df[["sigma2"]]), rep(0.5, 5))
-  })
-
-  test_that("mixed-membership Gibbs samples P when known_P is NULL", {
-    set.seed(47)
-    zsoft <- ilrInv(P_fx)
-    out <- mixed_memberships_latentcov_gibbs_sampler(
-      Sigma = Sigma_fx,
-      Y = .ny,
-      init_Z = zsoft,
-      init_W = .w_init,
-      K = 3,
-      R = 2,
-      niter = 5,
-      known_alpha = alpha_fx
-    )
-    expect_false(anyNA(as.data.frame(posterior::as_draws_df(out))))
   })
 
   test_that("mixed-membership Gibbs auto-saves every 100 iterations", {

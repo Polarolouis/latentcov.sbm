@@ -33,6 +33,9 @@ P_fx <- matrix(
 )
 colnames(P_fx) <- paste0("coord", seq_len(K_fx - 1L))
 
+zsoft <- ilrInv(P_fx)
+
+
 # One-hot row memberships (n1 x K).
 Z_fx <- matrix(0, n1_fx, K_fx)
 Z_fx[cbind(seq_len(n1_fx), c(1L, 2L, 3L, 1L, 2L, 3L))] <- 1

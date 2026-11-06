@@ -323,7 +323,7 @@ test_that("param_alpha_given_Y_Z_W_bernoulli sums counts per block pair", {
   )
   expect_equal(
     res[["shape2"]],
-    0.1 + t(Z_fx) %*% (1 - mask_observed(Y_fx_bern, mask_fx)) %*% W_fx
+    0.1 + t(Z_fx) %*% (mask_fx - mask_observed(Y_fx_bern, mask_fx)) %*% W_fx
   )
 })
 
