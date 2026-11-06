@@ -24,12 +24,11 @@ Derives the shape and rate of the full conditional
 \details{
 On the different emission distributions:
 \itemize{
-\item{\verb{bernoulli:}}{takes \code{a0} and \code{b0} as priors for the Beta distribution
+\item \verb{"bernoulli":} takes \code{a0} and \code{b0} as priors for the Beta distribution
 and outputs \code{shape1} and \code{shape2} the parameters for the
-a posteriori Beta distribution.}
-\item{\verb{poisson:}}{takes \code{a0} and \code{b0} as priors for the Gamma distribution
+a posteriori Beta distribution.
+\item \verb{"poisson":} takes \code{a0} and \code{b0} as priors for the Gamma distribution
 and outputs \code{shape} and \code{rate} the parameters for the
 a posteriori Gamma distribution.}
-}
 }
 \keyword{internal}

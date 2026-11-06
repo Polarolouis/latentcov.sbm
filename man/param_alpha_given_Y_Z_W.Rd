@@ -39,6 +39,10 @@ compute the posterior parameters. Defaults to "poisson"}
 \item{stats_cols}{optional; a list returned by \code{\link[=sufficient_stats_cols]{sufficient_stats_cols()}} to
 reuse already-computed aggregates instead of recomputing them from \code{Y},
 \code{mask} and \code{Z}.}
+
+\item{a0}{the shape1 parameter for the Beta distribution for Poisson emission}
+
+\item{b0}{the shape2 parameter for the Beta distribution for Poisson emission}
 }
 \value{
 a list with \code{shape} and \code{rate} (\code{poisson}) or \code{shape1} and \code{shape2}
