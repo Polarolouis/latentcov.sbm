@@ -454,6 +454,8 @@ param_alpha_given_Y_Z_W <- function(
 }
 
 #' @rdname param_alpha_given_Y_Z_W
+#' @param a0 the shape parameter for the Gamma distribution for Poisson emission
+#' @param b0 the rate parameter for the Gamma distribution for Poisson emission
 param_alpha_given_Y_Z_W_poisson <- function(
   a0,
   b0,
@@ -476,6 +478,8 @@ param_alpha_given_Y_Z_W_poisson <- function(
 }
 
 #' @rdname param_alpha_given_Y_Z_W
+#' @param a0 the shape1 parameter for the Beta distribution for Poisson emission
+#' @param b0 the shape2 parameter for the Beta distribution for Poisson emission
 param_alpha_given_Y_Z_W_bernoulli <- function(
   a0,
   b0,
@@ -508,6 +512,8 @@ param_alpha_given_Y_Z_W_bernoulli <- function(
 #'   `shape1`/`shape2` for `bernoulli`
 #' @param emission a string indicating the emission distribution to sample
 #'   from. Defaults to "poisson"
+#'
+#' @importFrom stats rbeta rgamma
 #'
 #' @return a matrix (\eqn{K \times R}) of sampled connectivity coefficients
 #' @keywords internal
