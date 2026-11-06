@@ -2,25 +2,33 @@
 % Please edit documentation in R/sufficient-statistics.R
 \name{alpha_params_from_stats_cols}
 \alias{alpha_params_from_stats_cols}
-\title{Posterior Gamma parameters of the connectivity matrix \code{alpha}}
+\title{Posterior parameters of the connectivity matrix \code{alpha}}
 \usage{
-alpha_params_from_stats_cols(a0, b0, W, stats_cols)
+alpha_params_from_stats_cols(..., W, stats_cols, emission = "poisson")
 }
 \arguments{
-\item{a0}{prior shape parameter of the Gamma}
-
-\item{b0}{prior rate parameter of the Gamma}
+\item{...}{the prior parameters for the alpha distribution}
 
 \item{W}{the column memberships as an (\eqn{n_2 \times R}) one-hot matrix}
 
 \item{stats_cols}{a list returned by \code{\link[=sufficient_stats_cols]{sufficient_stats_cols()}}}
 }
 \value{
-a list with \code{shape} and \code{rate} matrices (\eqn{K \times R})
+a list containing the updated parameters for the \code{emission}
+distribution provided. See details for the exact names
 }
 \description{
 Derives the shape and rate of the full conditional
-\eqn{\alpha \mid Y, Z, W} from the column sufficient statistics, avoiding a
-third independent aggregation pass over \code{Y}.
+\eqn{\alpha \mid Y, Z, W} from the column sufficient statistics
+}
+\details{
+On the different emission distributions:
+\itemize{
+\item \verb{"bernoulli":} takes \code{a0} and \code{b0} as priors for the Beta distribution
+and outputs \code{shape1} and \code{shape2} the parameters for the
+a posteriori Beta distribution.
+\item \verb{"poisson":} takes \code{a0} and \code{b0} as priors for the Gamma distribution
+and outputs \code{shape} and \code{rate} the parameters for the
+a posteriori Gamma distribution.}
 }
 \keyword{internal}

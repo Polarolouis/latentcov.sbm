@@ -1,6 +1,6 @@
 Package: latentcov.sbm
 Title: Latent Covariance Between Latent Block in SBM
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: 
     person("Louis", "Lacoste", , "louis.lacoste@inrae.fr", role = c("aut", "cre"))
 Description: This package implements a latent covariance structure between the latent blocks of the Stochastic Block Model to relax the hypothesis of independance between the blocks.
@@ -12,6 +12,7 @@ URL: https://github.com/Polarolouis/latentcov.sbm
 BugReports: https://github.com/Polarolouis/latentcov.sbm/issues
 Suggests: 
     future.apply,
+    glue,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Config/testthat/parallel: true

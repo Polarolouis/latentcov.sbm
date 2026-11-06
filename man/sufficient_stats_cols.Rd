@@ -4,7 +4,7 @@
 \alias{sufficient_stats_cols}
 \title{Column sufficient statistics of a Poisson LBM iteration}
 \usage{
-sufficient_stats_cols(Y, mask, Z)
+sufficient_stats_cols(Y, mask, Z, emission = "poisson")
 }
 \arguments{
 \item{Y}{the observed count matrix (\eqn{n_1 \times n_2}), with or without NAs}
@@ -14,6 +14,9 @@ and 0 for NAs}
 
 \item{Z}{the row memberships as an (\eqn{n_1 \times K}) one-hot matrix
 (hard) or a probability matrix (soft)}
+
+\item{emission}{a string indicating the emission distribution for
+which to compute sufficient statistics. Defaults to "poisson"}
 }
 \value{
 a list with \code{R_Z} (\eqn{n_2 \times K}) and \code{N_Z} (\eqn{n_2 \times K})

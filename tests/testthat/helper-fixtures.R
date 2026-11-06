@@ -33,6 +33,9 @@ P_fx <- matrix(
 )
 colnames(P_fx) <- paste0("coord", seq_len(K_fx - 1L))
 
+zsoft <- ilrInv(P_fx)
+
+
 # One-hot row memberships (n1 x K).
 Z_fx <- matrix(0, n1_fx, K_fx)
 Z_fx[cbind(seq_len(n1_fx), c(1L, 2L, 3L, 1L, 2L, 3L))] <- 1
@@ -90,6 +93,7 @@ Y_fx <- matrix(
   byrow = TRUE
 )
 mask_fx <- (!is.na(Y_fx)) * 1L
+Y_fx_bern <- (Y_fx > 2) * 1L
 
 # A tiny positive-definite Sigma for sampler-level tests.
 Sigma_spd_fx <- diag(6) * 1 + 0.1

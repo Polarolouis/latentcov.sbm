@@ -2,7 +2,7 @@
 % Please edit documentation in R/gibbs-samplers.R
 \name{gibbs_sampling_lbm_cov_poisson}
 \alias{gibbs_sampling_lbm_cov_poisson}
-\title{Gibbs sampler for latent phylogenetic Poisson LBM}
+\title{Gibbs sampler for latent covariance Poisson LBM}
 \usage{
 gibbs_sampling_lbm_cov_poisson(
   Sigma,

@@ -84,6 +84,20 @@ test_that("param_multinom_probs_Z_poisson gives normalized valid probabilities",
   expect_true(all(probs > 0 & probs < 1))
 })
 
+test_that("param_multinom_probs_Z_bernoulli gives normalized valid probabilities", {
+  probs <- param_multinom_probs_Z_bernoulli(
+    Y_fx_bern,
+    alpha_fx,
+    W_fx,
+    pi_fx,
+    mask_fx
+  )
+  expect_equal(dim(probs), c(n1_fx, K_fx))
+  expect_equal(rowSums(probs), rep(1, n1_fx), tolerance = 1e-10)
+  expect_true(all(probs > 0 & probs < 1))
+})
+
+
 test_that("param_multinom_probs_Z_poisson is NA-proof through the mask", {
   clean <- mask_NA(Y_fx)$YnoNA
   with_na <- param_multinom_probs_Z_poisson(
@@ -94,6 +108,26 @@ test_that("param_multinom_probs_Z_poisson is NA-proof through the mask", {
     mask_fx
   )
   without_na <- param_multinom_probs_Z_poisson(
+    clean,
+    alpha_fx,
+    W_fx,
+    pi_fx,
+    mask_fx
+  )
+  expect_equal(with_na, without_na, tolerance = 1e-12)
+  expect_false(anyNA(with_na))
+})
+
+test_that("param_multinom_probs_Z_bernoulli is NA-proof through the mask", {
+  clean <- mask_NA(Y_fx_bern)$YnoNA
+  with_na <- param_multinom_probs_Z_bernoulli(
+    Y_fx_bern,
+    alpha_fx,
+    W_fx,
+    pi_fx,
+    mask_fx
+  )
+  without_na <- param_multinom_probs_Z_bernoulli(
     clean,
     alpha_fx,
     W_fx,
@@ -130,6 +164,32 @@ test_that("param_multinom_probs_Z_cov_poisson uses per-row pi from ilrInv(P)", {
   expect_equal(rowSums(cov_probs), rep(1, n1_fx), tolerance = 1e-10)
 })
 
+test_that("param_multinom_probs_Z_cov_bernoulli uses per-row pi from ilrInv(P)", {
+  set.seed(505L)
+  P_rep <- matrix(
+    rep(ilr(matrix(pi_fx, 1, K_fx)), n1_fx),
+    n1_fx,
+    K_fx - 1,
+    byrow = TRUE
+  )
+  cov_probs <- param_multinom_probs_Z_cov_bernoulli(
+    Y_fx_bern,
+    alpha_fx,
+    W_fx,
+    P_rep,
+    mask_fx
+  )
+  plain_probs <- param_multinom_probs_Z_bernoulli(
+    Y_fx_bern,
+    alpha_fx,
+    W_fx,
+    pi_fx,
+    mask_fx
+  )
+  expect_equal(cov_probs, plain_probs, tolerance = 1e-10)
+  expect_equal(rowSums(cov_probs), rep(1, n1_fx), tolerance = 1e-10)
+})
+
 test_that("param_multinom_probs_W_poisson is normalized and NA-proof", {
   probs <- param_multinom_probs_W_poisson(Y_fx, alpha_fx, Z_fx, rho_fx, mask_fx)
   expect_equal(dim(probs), c(n2_fx, R_fx))
@@ -137,6 +197,24 @@ test_that("param_multinom_probs_W_poisson is normalized and NA-proof", {
   clean <- mask_NA(Y_fx)$YnoNA
   expect_equal(
     param_multinom_probs_W_poisson(clean, alpha_fx, Z_fx, rho_fx, mask_fx),
+    probs,
+    tolerance = 1e-12
+  )
+})
+
+test_that("param_multinom_probs_W_bernoulli is normalized and NA-proof", {
+  probs <- param_multinom_probs_W_bernoulli(
+    Y_fx_bern,
+    alpha_fx,
+    Z_fx,
+    rho_fx,
+    mask_fx
+  )
+  expect_equal(dim(probs), c(n2_fx, R_fx))
+  expect_equal(rowSums(probs), rep(1, n2_fx), tolerance = 1e-10)
+  clean <- mask_NA(Y_fx_bern)$YnoNA
+  expect_equal(
+    param_multinom_probs_W_bernoulli(clean, alpha_fx, Z_fx, rho_fx, mask_fx),
     probs,
     tolerance = 1e-12
   )
@@ -222,6 +300,71 @@ test_that("sample_alpha_given_Y_Z_W_poisson matches the Gamma moments", {
   draws <- replicate(5000, sample_alpha_given_Y_Z_W_poisson(shape, rate))
   expect_equal(dim(draws), c(2, 2, 5000))
   expect_true(all(draws > 0))
-  expect_equal(mean(draws[1, 1, ]), shape[1, 1] / rate[1, 1], tolerance = 0.15)
-  expect_equal(mean(draws[2, 2, ]), shape[2, 2] / rate[2, 2], tolerance = 0.15)
+  mean_sampled_alpha <- apply(draws, 1:2, mean)
+  expect_equal(mean_sampled_alpha, shape / rate, tolerance = 0.1)
+  var_sampled_alpha <- apply(draws, 1:2, var)
+  expect_equal(var_sampled_alpha, shape / rate^2, tolerance = 0.1)
+})
+
+test_that("param_alpha_given_Y_Z_W_bernoulli sums counts per block pair", {
+  res <- param_alpha_given_Y_Z_W_bernoulli(
+    a0 = 0.1,
+    b0 = 0.1,
+    Y = Y_fx_bern,
+    Z = Z_fx,
+    W = W_fx,
+    mask = mask_fx
+  )
+  expect_equal(dim(res[["shape1"]]), c(K_fx, R_fx))
+  expect_equal(dim(res[["shape2"]]), c(K_fx, R_fx))
+  expect_equal(
+    res[["shape1"]],
+    0.1 + t(Z_fx) %*% mask_observed(Y_fx_bern, mask_fx) %*% W_fx
+  )
+  expect_equal(
+    res[["shape2"]],
+    0.1 + t(Z_fx) %*% (mask_fx - mask_observed(Y_fx_bern, mask_fx)) %*% W_fx
+  )
+})
+
+
+test_that("sample_alpha_given_Y_Z_W_bernoulli matches the Beta moments", {
+  set.seed(508L)
+  shape1 <- matrix(c(5, 1, 2, 3), 2, 2)
+  shape2 <- matrix(c(2, 1, 1, 6), 2, 2)
+  draws <- replicate(5000, sample_alpha_given_Y_Z_W_bernoulli(shape1, shape2))
+  expect_equal(dim(draws), c(2, 2, 5000))
+  expect_true(all(draws > 0))
+  expect_true(all(draws < 1))
+  mean_sampled_alpha <- apply(draws, 1:2, mean)
+  var_sampled_alpha <- apply(draws, 1:2, var)
+  expect_equal(mean_sampled_alpha, shape1 / (shape1 + shape2), tolerance = 0.05)
+  expect_equal(
+    var_sampled_alpha,
+    (shape1 * shape2) / ((shape1 + shape2)^2 * (shape1 + shape2 + 1)),
+    tolerance = 0.05
+  )
+})
+
+test_that("NAs do not leak into the alpha bernoulli sufficient statistics", {
+  clean <- mask_NA(Y_fx_bern)$YnoNA
+  with_na <- param_alpha_given_Y_Z_W_bernoulli(
+    0,
+    0,
+    Y_fx_bern,
+    Z_fx,
+    W_fx,
+    mask_fx
+  )
+  without_na <- param_alpha_given_Y_Z_W_bernoulli(
+    0,
+    0,
+    clean,
+    Z_fx,
+    W_fx,
+    mask_fx
+  )
+  expect_equal(with_na, without_na)
+  expect_false(anyNA(with_na[["shape1"]]))
+  expect_false(anyNA(with_na[["shape2"]]))
 })
