@@ -18,3 +18,19 @@ check_emission_distribution <- function(
     error_call = call
   )
 }
+
+#' Check the provided variance-covariance matrix
+#' @param Sigma the variance-covariance matrix
+#' @param arg the argument provided
+#' @param call the calling context to go up the back trace
+#' @keywords internal
+check_Sigma <- function(
+  Sigma,
+  arg = rlang::caller_arg(Sigma),
+  call = rlang::caller_env()
+) {
+  rlang::check_required(Sigma, arg = arg, call = call)
+  if (qr(Sigma)$rank < ncol(Sigma)) {
+    cli::cli_abort("{arg} is singular and thus can't be inverted !")
+  }
+}
