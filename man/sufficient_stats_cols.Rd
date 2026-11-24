@@ -2,7 +2,7 @@
 % Please edit documentation in R/sufficient-statistics.R
 \name{sufficient_stats_cols}
 \alias{sufficient_stats_cols}
-\title{Column sufficient statistics of a Poisson LBM iteration}
+\title{Column sufficient statistics of a LBM iteration}
 \usage{
 sufficient_stats_cols(Y, mask, Z, emission = "poisson")
 }

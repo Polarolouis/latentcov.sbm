@@ -106,8 +106,7 @@ sufficient_stats <- function(Y, mask, Z, W, emission = "poisson") {
 #' @details The below statistics are computed for the emission distributions:
 #' \itemize{
 #' \item `"poisson"`: \code{S = t(Z) %*% Y %*% W}, \code{E = t(Z) %*% mask %*% W}, \code{logfactY = sum(lfactorial(Y))}
-#' \item `"bernoulli"`: \code{S = t(Z) %*% Y %*% W}, \code{F = t(Z) %*% (mask-Y) %*% W}
-#' }
+#' \item `"bernoulli"`: \code{S = t(Z) %*% Y %*% W}, \code{F = t(Z) %*% (mask-Y) %*% W}}
 #'
 #' @keywords internal
 #'
