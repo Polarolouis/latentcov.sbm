@@ -309,6 +309,20 @@ find_permutation_alphas_L2 <- function(alpha_ref, alpha_to_align) {
 #'
 #' @return A matrix of size \eqn{(K-1)\times K}.
 default_Psi_function <- function(K) {
+  simple_Psi_function(K)
+}
+
+#' Build the simplest change-of-basis matrix of size \eqn{(K-1)\times K}
+#' by outputting a diagonal with one and a last column of zeros
+#'
+#' @inheritParams default_Psi_function
+simple_Psi_function <- function(K) {
+  diag(K)[-K, ]
+}
+
+#' Builds the change-of-basis from Egozcue et al. 2003,2005 or Hron et al. 2010
+#' @inheritParams default_Psi_function
+egozcue_Psi_function <- function(K) {
   t(sapply(seq(K - 1), function(j) {
     sqrt((K - j) / (K - j + 1)) * c(rep(0, j - 1), -1, rep(1 / (K - j), K - j))
   }))
