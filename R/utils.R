@@ -853,6 +853,26 @@ clr <- function(x) {
   return(1 / (1 + exp(-x)))
 }
 
+#' Compute the multivariate beta function
+#' using the lgamma implementation
+#'
+#' @inheritParams mvlbeta
+#'
+#' @keywords internal
+mvbeta <- function(alpha) {
+  exp(mvlbeta(alpha))
+}
+
+#' Compute the log multivariate beta function
+#' using the lgamma implementation
+#'
+#' @param alpha the vector of parameters for beta function
+#'
+#' @keywords internal
+mvlbeta <- function(alpha) {
+  sum(lgamma(alpha)) - lgamma(sum(alpha))
+}
+
 stick_breaking <- function(x) {
   sapply(seq_len(length(x) - 1), function(idx) {
     if (idx == 1) {
