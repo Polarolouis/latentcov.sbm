@@ -1,4 +1,4 @@
-# Sufficient statistics of a Poisson LBM iteration
+# Sufficient statistics of a LBM iteration
 #
 # The per-iteration aggregates consumed by the `alpha`, `W` and `Z` full
 # conditionals. Computed once per iteration and reused across conditionals
@@ -40,7 +40,7 @@ sufficient_stats_rows <- function(Y, mask, W, emission = "poisson") {
   return(out)
 }
 
-#' Column sufficient statistics of a Poisson LBM iteration
+#' Column sufficient statistics of a LBM iteration
 #'
 #' Computes the column-side aggregates \eqn{R_Z = Y_{obs}^\top Z} and
 #' \eqn{N_Z = \text{mask}^\top Z} used by the column-membership (`W`) and
@@ -92,6 +92,48 @@ sufficient_stats <- function(Y, mask, Z, W, emission = "poisson") {
   cols <- sufficient_stats_cols(Y, mask, Z, emission = emission)
   rows <- sufficient_stats_rows(Y, mask, W, emission = emission)
   c(cols, rows)
+}
+
+#' Compute sufficient statistics for the implemented emission distributions
+#'
+#' @param Y the bi-adjacency matrix
+#' @param mask the mask allowing to handle missing values.
+#' @param Z the row memberships as an (\eqn{n_1 \times K}) one-hot matrix
+#'   (hard) or a probability matrix (soft)
+#' @param W the column memberships as an (\eqn{n_2 \times R}) one-hot matrix
+#'   (hard) or a probability matrix (soft)
+#'
+#' @details The below statistics are computed for the emission distributions:
+#' \itemize{
+#' \item `"poisson"`: \code{S = t(Z) %*% Y %*% W}, \code{E = t(Z) %*% mask %*% W}, \code{logfactY = sum(lfactorial(Y))}
+#' \item `"bernoulli"`: \code{S = t(Z) %*% Y %*% W}, \code{F = t(Z) %*% (mask-Y) %*% W}
+#' }
+#'
+#' @keywords internal
+#'
+sufficient_stats_emission <- function(
+  Y,
+  Z,
+  W,
+  emission = "poisson",
+  mask = (!is.na(Y)) * 1L
+) {
+  check_emission_distribution(emission)
+  Y_obs <- mask_observed(Y, mask)
+
+  switch(
+    emission,
+    "bernoulli" = {
+      list(S = t(Z) %*% Y_obs %*% W, F = t(Z) %*% (mask - Y) %*% W)
+    },
+    "poisson" = {
+      list(
+        S = t(Z) %*% Y_obs %*% W,
+        E = t(Z) %*% mask %*% W,
+        logfactY = sum(lfactorial(Y_obs))
+      )
+    }
+  )
 }
 
 #' Posterior parameters of the connectivity matrix `alpha`
