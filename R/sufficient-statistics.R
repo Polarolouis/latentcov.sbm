@@ -123,7 +123,7 @@ sufficient_stats_emission <- function(
   switch(
     emission,
     "bernoulli" = {
-      list(S = t(Z) %*% Y_obs %*% W, F = t(Z) %*% (mask - Y) %*% W)
+      list(S = t(Z) %*% Y_obs %*% W, F = t(Z) %*% (mask - Y_obs) %*% W)
     },
     "poisson" = {
       list(
