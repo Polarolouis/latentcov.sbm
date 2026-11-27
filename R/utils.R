@@ -299,35 +299,6 @@ find_permutation_alphas_L2 <- function(alpha_ref, alpha_to_align) {
   ))
 }
 
-#' Default Psi contrast matrix
-#'
-#' Builds the default \eqn{(K-1) \times K} contrast (basis) matrix used by the
-#' pivot coordinate (isometric log-ratio style) transformation of the block
-#' proportions.
-#'
-#' @param K Number of groups (blocks).
-#'
-#' @return A matrix of size \eqn{(K-1)\times K}.
-default_Psi_function <- function(K) {
-  simple_Psi_function(K)
-}
-
-#' Build the simplest change-of-basis matrix of size \eqn{(K-1)\times K}
-#' by outputting a diagonal with one and a last column of zeros
-#'
-#' @inheritParams default_Psi_function
-simple_Psi_function <- function(K) {
-  diag(K)[-K, ]
-}
-
-#' Builds the change-of-basis from Egozcue et al. 2003,2005 or Hron et al. 2010
-#' @inheritParams default_Psi_function
-egozcue_Psi_function <- function(K) {
-  t(sapply(seq(K - 1), function(j) {
-    sqrt((K - j) / (K - j + 1)) * c(rep(0, j - 1), -1, rep(1 / (K - j), K - j))
-  }))
-}
-
 #' Build a permutation matrix from an ordering
 #'
 #' @param order An integer vector giving the new order of a set of elements
@@ -798,19 +769,6 @@ compute_meanpi <- function(draws, K = NULL) {
 #' @return the sum of squared differences between `x` and `y`
 mse <- function(x, y) sum((x - y)^2)
 
-
-#' Inverse pivot coordinate transformation
-#'
-#' Performs the inverse pivot coordinate transformation for the latent covariance stochastic block model
-#' @param z Input matrix
-#' @param basis The basis to use
-#' @return Transformed matrix
-ilrInv <- function(z, basis = default_Psi_function(ncol(z) + 1)) {
-  clr <- z %*% basis
-  e <- exp(clr - apply(clr, 1, max))
-  e / rowSums(e)
-}
-
 #' A function to save and talk if verbose
 #'
 #' @param object the object to save
@@ -835,20 +793,6 @@ auto_save <- function(
   return(invisible(path))
 }
 
-ilr <- function(x, basis = default_Psi_function(ncol(x))) {
-  if (is.vector(x)) {
-    cli::cli_warn("{.arg x} is a vector, casting it to a one row matrix.")
-    x <- matrix(x, nrow = 1)
-  }
-  clr(x) %*% t(basis)
-}
-
-clr <- function(x) {
-  lx <- log(x)
-  lx_bar <- apply(lx, 1, mean)
-  return(lx - lx_bar)
-}
-
 .logit <- function(x) {
   return(1 / (1 + exp(-x)))
 }
@@ -871,15 +815,6 @@ mvbeta <- function(alpha) {
 #' @keywords internal
 mvlbeta <- function(alpha) {
   sum(lgamma(alpha)) - lgamma(sum(alpha))
-}
-
-stick_breaking <- function(x) {
-  sapply(seq_len(length(x) - 1), function(idx) {
-    if (idx == 1) {
-      return(exp(x[idx]) / sum(exp(x)))
-    }
-    return(.logit(x[idx]) * sum(.logit(x[seq(idx - 1)])))
-  })
 }
 
 mask_NA <- function(Y, replace_value = 0) {
@@ -913,6 +848,84 @@ known_membership_to_labels <- function(memb) {
     return(apply(memb, 1, which.max))
   }
   as.integer(memb)
+}
+
+#' Function to construct default priors for each \eqn{K, R} values.
+#'
+default_priors <- function(model = "lbm", emission = "poisson") {}
+
+#' Split a list of clusters
+#'
+#' @param X an adjacency matrix
+#' @param Z a vector of cluster memberships
+#' @param Q The number of maximal clusters
+#'
+#' @noMd
+#' @noRd
+#'
+#' @return A list of Q clustering of Q+1 clusters
+split_clust <- function(X, Z, Q, is_bipartite = nrow(X) != ncol(X)) {
+  X <- matrix(X, nrow = nrow(X), ncol = ncol(X))
+  Z_split <- lapply(
+    seq(Q),
+    FUN = function(q) {
+      if (sum(Z == q) <= 3) {
+        return(Z)
+      }
+      Z_new <- Z
+      mx <- ifelse(
+        is_bipartite,
+        mean(X[Z == q, ], na.rm = TRUE),
+        mean(X[Z == q, Z == q], na.rm = TRUE)
+      )
+      X[is.na(X)] <- mx
+      if (isSymmetric.matrix(X) || is_bipartite) {
+        Xsub <- X[Z == q, , drop = FALSE]
+      } else {
+        Xsub <- cbind(X[Z == q, , drop = FALSE], t(X[, Z == q, drop = FALSE]))
+      }
+      Xsub <- as.matrix(Xsub)
+      if (nrow(unique(Xsub, MARGIN = 1)) <= 3) {
+        return(Z)
+      }
+      C <- stats::kmeans(x = Xsub, centers = 2)$cluster
+      # C  <-  hierarClust(Xsub, 2)# + Q#stats::kmeans(x = .5 * (X[Z==q,] + t(X[,Z==q])), centers = 2)$cluster + Q
+      if (length(unique(C)) == 2) {
+        if (!is_bipartite) {
+          p1 <- c(
+            mean(X[Z == q, , drop = FALSE][C == 1, ]),
+            mean(X[, Z == q, drop = FALSE][, C == 1])
+          )
+          p2 <- c(
+            mean(X[Z == q, , drop = FALSE][C == 2, ]),
+            mean(X[, Z == q, drop = FALSE][, C == 2])
+          )
+        } else {
+          p1 <- c(
+            mean(X[Z == q, , drop = FALSE][C == 1, ])
+          )
+          p2 <- c(
+            mean(X[Z == q, , drop = FALSE][C == 2, ])
+          )
+        }
+        c <- which.max(abs(p1 - p2))
+        md <- sample(
+          x = 2,
+          size = 2,
+          replace = FALSE,
+          prob = c(
+            max(1 / ncol(Xsub), p1[c]),
+            max(1 / ncol(Xsub), p2[c])
+          )
+        )
+        Z_new[Z == q][C == which.min(md)] <- Q + 1
+      }
+
+      return(Z_new)
+    }
+  )
+  Z_split <- Z_split[which(sapply(X = Z_split, FUN = function(x) !is.null(x)))]
+  return(Z_split)
 }
 
 #' a safe log to prevent NaN production
